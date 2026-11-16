@@ -1,0 +1,77 @@
+# Outpost
+
+A self-hosted game where you learn to program by restoring an abandoned outpost. Every system at Kestrel Ridge runs on Python and every one of them is broken: you repair them by writing real code, and the outpost's schematic lights up as your code works.
+
+It's playable entirely in the browser:
+
+- **Kestrel Ridge**: 39 missions of Python fundamentals across thirteen systems.
+- **The survey office**, the first algorithms region: 29 missions on measuring work, binary search, sorting, recursion, merge sort, hashing, flood fill, and breadth-first search. Work budgets fail slow solutions, and the side panel shows your code at work: sorting bars, a call tree, and a map that lights up as your search explores it.
+- **The relay line**: 43 missions in a real Linux terminal that runs inside the page. They cover the command line, files and folders, reading and searching files, running and writing Python programs from the shell, input and output, and permissions. The region ends by building `logscan`, a real command-line tool, and bringing the last relay online on your own.
+- **21 spaced maintenance calls** that bring back earlier skills.
+
+## What's in it
+
+- **Onboarding that asks your experience** and sets your starting support level: Guided (most of the code is there for you to finish), Standard (a starting point and the lesson on request), or Challenge (an empty file and the requirements). Experienced players can open any mission, or go straight to the final one, which restores every system at once if they pass.
+- **Support that adapts per skill.** Solve a mission cleanly and the next one for that skill gives you less to start from; struggle and it gives you more. The briefing says when and why the level changed. After three failed submissions, a mission offers a more complete starting point, and undo brings your own code back. You can fix one level for everything from the Support menu.
+- **39 missions in thirteen systems**, in roughly the order Boot.dev teaches Python: output and comments, syntax and runtime errors, variables and arithmetic, types, functions and scope, decisions and boolean logic, `for` and `while` loops, `break` and `continue`, lists, looping by position with `range`, changing lists in place, slicing, nested loops and grids, strings, dictionaries, sets, debugging, and handling errors with `try`/`except`. A final independent mission combines them. Each system on the schematic needs two to four repairs before its lamp lights.
+- **Three kinds of mission.** Code missions have Run and Submit, as in Boot.dev: Run checks the examples, and Submit adds hidden tests for edge cases. Predict missions give you a program you can't run: you type exactly what it prints, and the game compares your prediction line by line without revealing the answer. Terminal missions give you a shell on a small Linux machine: you work with real commands, and Check looks at what you've done to the machine. A side panel maps your files and marks where the terminal is, and your files survive a reload.
+- **Skill evidence that's kept separate from progress.** A skill counts as *demonstrated* only when you solve a mission without step-by-step code or hints, or demonstrate that skill in the final mission without hints. Guided play and hints count as practice. The Skills panel shows which is which.
+- **Spaced maintenance calls** revisit functions, decisions, loops, lists, dictionaries, recursion, and hashing with three different tasks per skill. Calls start a day after their prerequisite, return at wider intervals after independent successes, and return sooner after supported practice. They never block the campaign.
+- **Retention evidence** records independent maintenance success at least a week after earlier independent evidence. Scheduling and attempts survive reloads and backup restores; old saves remain compatible.
+- **Errors explained in plain language**, with the failing line highlighted in the editor. Runaway loops are stopped after 5 seconds.
+- **Progress saved in the browser**, with backup download and restore.
+
+## Run it
+
+You need Node.js 22.15 or later, and Docker (or Podman) to build the relay terminal.
+
+```sh
+npm install      # also copies the Python runtime into public/pyodide
+npm run vm       # builds the relay terminal's Linux machine into public/vm (needs Docker)
+npm run dev      # http://localhost:5173
+```
+
+`npm run vm` takes about two minutes and only needs re-running when `vm/` or the relay stages of the `Dockerfile` change. Restart `npm run dev` afterwards: Vite's dev server can miss thousands of files being replaced at once. Without it, everything but the relay line still works, and terminal missions say the machine isn't installed.
+
+Other scripts:
+
+| Command | What it does |
+|---|---|
+| `npm test` | Runs every mission's reference solution and starter code through the real Python harness, and plays every terminal mission on the real relay machine (skipped until `npm run vm` has built it) |
+| `npm run typecheck` | Type-checks the app and tests |
+| `npm run build` | Builds the static site into `dist/` |
+| `npm run check` | Type-check and tests together |
+| `npm run vm` | Builds the relay machine: the Linux image with Docker, then a saved state players start from |
+
+## Self-host it
+
+```sh
+docker compose up -d --build   # http://localhost:8080
+```
+
+The image is a static site served by nginx, and it builds the relay machine too. That stage runs 32-bit x86 Linux, which x86 hosts run directly; on ARM hosts, Docker Desktop and OrbStack emulate it. Any static file server works if it serves `.mjs` as JavaScript and `.wasm` as `application/wasm`, and returns a 404, not the game's page, for missing files under `/vm/`. See [deploy/nginx.conf](deploy/nginx.conf).
+
+## How it works
+
+- **Learner code never runs on the server.** Python runs in the player's browser through [Pyodide](https://pyodide.org) (Python 3.14 compiled to WebAssembly), inside a Web Worker. The worker is terminated and replaced if a run goes past its time limit. The Python runtime ships with the game, so nothing is loaded from a CDN, and a self-hosted copy works offline.
+- **The relay terminal is a real Linux machine running in the page.** [v86](https://github.com/copy/v86) emulates a 32-bit PC in WebAssembly, running a small Alpine Linux with bash, coreutils, nano, less, man pages, Python 3.14, and Git. The game downloads about 13 MB once: a saved state taken just after boot, so the terminal is ready in a few seconds. Each file of the system is then fetched only when something reads it. A check agent on the machine's second serial port, out of the player's sight, sets up each mission and checks it. The player's files are saved in the browser (IndexedDB) after every command. See [vm/](vm/) and [src/relay/](src/relay/).
+- **Missions are Markdown files** in region folders (`src/content/act1/` to `act3/`) and `src/content/maintenance/`. Each one holds the story, lesson, starter code for each support level, hints, tests, and a reference solution. See [docs/AUTHORING.md](docs/AUTHORING.md).
+- **Progress lives in the browser's local storage.** There are no accounts yet, so a different browser or device starts fresh unless you restore a backup.
+
+```
+src/
+  content/       mission files, the parser, and the skill list
+  python/        harness (Python side), worker, and runner
+  relay/         the relay terminal: emulator, check library, session, saved files
+  game/          save data, unlock and skill rules, error explanations
+  components/    the interface
+vm/              the relay machine: guest files, check agent, and build scripts
+tests/           harness and content tests (run against real Pyodide and the relay machine)
+docs/            authoring guide and roadmap
+```
+
+## Where it's going
+
+[docs/ROADMAP.md](docs/ROADMAP.md) maps the whole game, from this slice to a capstone project, and lists what to do next.
+
+[docs/LEARNING.md](docs/LEARNING.md) explains the learning strategy, review rules, research basis, and playtest plan.
