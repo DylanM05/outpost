@@ -64,6 +64,30 @@ export const SKILLS = {
     name: "Permissions",
     summary: "Read who owns a file and who may use it, change permissions with chmod, and act as root with sudo, sparingly.",
   },
+  commits: {
+    name: "Commits",
+    summary: "Turn a folder into a Git repository, see what changed with status and diff, stage and commit changes, and keep files out with .gitignore.",
+  },
+  "git-history": {
+    name: "Reading history",
+    summary: "Read a repository's history with log, name commits by their hashes, and look inside commits, trees, and blobs.",
+  },
+  "git-config": {
+    name: "Configuring Git",
+    summary: "Read and change Git's settings, and know which settings file wins when they disagree.",
+  },
+  branches: {
+    name: "Branches",
+    summary: "Create and switch branches, and bring work back together with merge and rebase.",
+  },
+  undoing: {
+    name: "Undoing changes",
+    summary: "Discard, unstage, and uncommit work with restore and reset, knowing what each one throws away.",
+  },
+  remotes: {
+    name: "Remotes",
+    summary: "Connect repositories, fetch, pull, and push, and share work through a shared repository.",
+  },
 } as const;
 
 export type SkillId = keyof typeof SKILLS;

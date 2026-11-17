@@ -9,7 +9,8 @@ import wasmUrl from "v86/build/v86.wasm?url";
 import type { Mission } from "../content/parse";
 import type { RunMode } from "../components/Bench";
 import type { RunOutcome } from "../python/runner";
-import { checkCode, loadWorkspaceCode, saveWorkspaceCode, setupCode, toRunResult, viewCode, type CheckReply } from "./checks";
+import { checkCode, loadWorkspaceCode, repoViewCode, saveWorkspaceCode, setupCode, toRunResult, viewCode, type CheckReply } from "./checks";
+import type { GraphCommit } from "./graph";
 import type { Manifest, RelayMachine } from "./machine";
 import { clearWorkspace, loadWorkspace, saveWorkspace } from "./workspace";
 
@@ -40,6 +41,31 @@ export interface FilesView {
   entries: FileEntry[];
   cut: boolean;
 }
+
+export interface RepoRef {
+  name: string;
+  kind: "branch" | "remote" | "tag";
+  hash: string;
+}
+
+// A Git repository for the repo scene. repo is null when neither the
+// terminal's folder nor the mission's repository is in one.
+export type RepoView =
+  | { cwd: string | null; repo: null }
+  | {
+      cwd: string | null;
+      repo: string;
+      // The branch HEAD names, or null when it names a commit.
+      branch: string | null;
+      // The commit HEAD is on, or null before the first commit.
+      head: string | null;
+      commits: GraphCommit[];
+      cut: boolean;
+      refs: RepoRef[];
+      staged: string[];
+      changed: string[];
+      untracked: string[];
+    };
 
 async function download(url: string, progress: (loaded: number, total: number) => void): Promise<ArrayBuffer> {
   const response = await fetch(url);
@@ -85,6 +111,7 @@ const message = (error: unknown) => (error instanceof Error ? error.message : St
 class RelaySession {
   status: RelayStatus = { kind: "off" };
   view: FilesView | null = null;
+  repoView: RepoView | null = null;
   private machine: Promise<RelayMachine> | null = null;
   // The mission whose files are in the machine, once it's ready.
   private mission: Mission | null = null;
@@ -114,6 +141,7 @@ class RelaySession {
 
   getStatus = () => this.status;
   getView = () => this.view;
+  getRepoView = () => this.repoView;
 
   // Sets the machine up for a mission, unless it already is.
   open(mission: Mission): Promise<void> {
@@ -212,6 +240,8 @@ class RelaySession {
     const machine = await this.start();
     this.generation++;
     this.mission = null;
+    this.view = null;
+    this.repoView = null;
     clearTimeout(this.saveTimer);
     this.setStatus({ kind: "preparing" });
     try {
@@ -278,16 +308,25 @@ class RelaySession {
     if (home && generation === this.generation) await saveWorkspace(missionId, home);
   }
 
-  // The files scene's view of the home directory, refreshed after each command.
+  // The files scene's view of the home directory, or the repo scene's view of
+  // a repository, refreshed after each command.
   private refreshView() {
-    if (this.mission?.scene !== "files") return;
+    const mission = this.mission;
+    if (mission?.scene !== "files" && mission?.scene !== "repo") return;
     const generation = this.generation;
     clearTimeout(this.viewTimer);
     this.viewTimer = setTimeout(async () => {
       try {
-        const view = await (await this.start()).call<FilesView>(viewCode());
-        if (generation !== this.generation) return;
-        this.view = view;
+        const machine = await this.start();
+        if (mission.scene === "files") {
+          const view = await machine.call<FilesView>(viewCode());
+          if (generation !== this.generation) return;
+          this.view = view;
+        } else {
+          const view = await machine.call<RepoView>(repoViewCode(mission.repo));
+          if (generation !== this.generation) return;
+          this.repoView = view;
+        }
         this.emit();
       } catch {
         // The view is decoration; a missed refresh is fine.

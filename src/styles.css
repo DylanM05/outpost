@@ -269,6 +269,11 @@ kbd {
   text-align: left;
 }
 
+/* Options like --oneline would otherwise break at their hyphens. */
+.prose td code {
+  white-space: nowrap;
+}
+
 /* Game layout */
 
 .game {
@@ -1953,4 +1958,159 @@ button.submit:hover:not(:disabled) {
   margin-top: 8px;
   color: var(--screen-soft);
   font-size: 13px;
+}
+
+/* Repo scene: a Git repository's history and changes, refreshed after each command. */
+
+.repo {
+  margin: 0 0 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--rule);
+  border-radius: 6px;
+  background: var(--screen);
+  color: var(--screen-ink);
+  font-size: 13px;
+}
+
+.repo header {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  align-items: baseline;
+  margin-bottom: 8px;
+}
+
+.repo header code {
+  font-family: var(--mono);
+  color: var(--syntax-number);
+}
+
+.repo header span,
+.repo figcaption,
+.repo-empty,
+.repo-clean,
+.repo-more {
+  color: var(--screen-soft);
+}
+
+.repo-empty,
+.repo-clean,
+.repo-more {
+  margin: 4px 0 8px;
+}
+
+.repo-history {
+  position: relative;
+  max-height: 340px;
+  overflow: auto;
+}
+
+.repo-history svg {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+.repo-history path {
+  fill: none;
+  stroke-width: 2;
+}
+
+.repo-history circle {
+  stroke: var(--screen);
+  stroke-width: 2;
+}
+
+.repo-history circle.head {
+  stroke: var(--screen-ink);
+}
+
+.repo-history .lane-0 { --lane: var(--syntax-keyword); }
+.repo-history .lane-1 { --lane: var(--syntax-string); }
+.repo-history .lane-2 { --lane: var(--syntax-number); }
+.repo-history .lane-3 { --lane: var(--screen-fault-ink); }
+.repo-history .lane-4 { --lane: var(--syntax-function); }
+.repo-history path[class^="lane-"] { stroke: var(--lane); }
+.repo-history circle[class^="lane-"] { fill: var(--lane); }
+
+.repo-history ol {
+  margin: 0;
+  list-style: none;
+}
+
+.repo-history li {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.repo-history .hash {
+  flex: none;
+  color: var(--screen-soft);
+  font-family: var(--mono);
+  font-size: 12px;
+}
+
+.repo-history .subject {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.repo .ref {
+  flex: none;
+  padding: 0 6px;
+  border: 1px solid var(--syntax-number);
+  border-radius: 9px;
+  color: var(--syntax-number);
+  font-family: var(--mono);
+  font-size: 11px;
+  line-height: 16px;
+}
+
+.repo .ref.head {
+  border-color: var(--signal);
+  background: var(--signal);
+  color: var(--signal-ink);
+  font-weight: 600;
+}
+
+.repo .ref.remote {
+  border-style: dashed;
+  border-color: var(--screen-soft);
+  color: var(--screen-soft);
+}
+
+.repo .ref.tag {
+  border-color: var(--syntax-function);
+  color: var(--syntax-function);
+}
+
+.repo-changes {
+  display: grid;
+  gap: 6px;
+  margin: 8px 0;
+}
+
+.repo-changes div {
+  margin: 0;
+}
+
+.repo-changes dt {
+  color: var(--screen-soft);
+  font-size: 12px;
+}
+
+.repo-changes dd {
+  margin: 0 0 0 12px;
+  font-family: var(--mono);
+}
+
+.repo-changes .staged dd { color: var(--syntax-string); }
+.repo-changes .changed dd { color: var(--syntax-keyword); }
+.repo-changes .untracked dd { color: var(--screen-fault-ink); }
+
+.repo figcaption {
+  margin-top: 6px;
 }

@@ -95,7 +95,7 @@ EOF
 ```python
 found = run("bash -lic 'command -v logscan' 2>/dev/null").out.strip()
 expect("logscan is a command", found, "/home/ranger/bin/logscan", "Copy the program to ~/bin/logscan, with no .py on the end.")
-check("~/bin/logscan is executable", lambda: "x" in mode("~/bin/logscan")[:3], "chmod +x before copying, or on the copy.")
+check("~/bin/logscan is executable", lambda: "x" in (mode("~/bin/logscan") or "")[:3], "chmod +x before copying, or on the copy.")
 piped = run("grep KR-RELAY-4 logs/relay.log | ~/bin/logscan")
 expect(
     "grep KR-RELAY-4 logs/relay.log | logscan",

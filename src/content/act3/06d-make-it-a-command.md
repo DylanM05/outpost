@@ -66,7 +66,7 @@ check(
     lambda: (read("~/scripts/status.py") or "").split("\n")[0].strip() in ("#!/usr/bin/env python3", "#!/usr/bin/python3"),
     "The very first line must be #!/usr/bin/env python3, with nothing before it.",
 )
-check("status.py is executable", lambda: "x" in mode("~/scripts/status.py")[:3], "Run chmod +x on it.")
+check("status.py is executable", lambda: "x" in (mode("~/scripts/status.py") or "")[:3], "Run chmod +x on it.")
 check(
     "./status.py runs on its own",
     lambda: run("./status.py", cwd="~/scripts").out == "KR-RELAY-1 status\nbeacon: 147.330\n",

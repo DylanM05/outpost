@@ -109,7 +109,7 @@ check(
     == ["backup=on", "beacon=valley", "power=normal", "interval=120", "callsign=KR-RELAY-6", "mode=narrow"],
     "Change only the wrong frequency line. Start over to get the original files back.",
 )
-check("start-relay is executable", lambda: "x" in mode("~/relay6/bin/start-relay")[:3], "Give it execute permission with chmod.")
+check("start-relay is executable", lambda: "x" in (mode("~/relay6/bin/start-relay") or "")[:3], "Give it execute permission with chmod.")
 check(
     "KR-RELAY-6 is online",
     lambda: (read("~/relay6/state/online") or "").startswith("online since"),

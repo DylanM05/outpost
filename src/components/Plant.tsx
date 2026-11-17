@@ -5,6 +5,7 @@ import type { SaveData } from "../game/save";
 import { relay, type FileEntry } from "../relay/session";
 import type { RunRecord } from "./Bench";
 import { Markdown } from "./Markdown";
+import { RepoScene } from "./RepoScene";
 import { Schematic } from "./Schematic";
 
 interface Props {
@@ -34,6 +35,7 @@ export function Plant({ missions, systems, save, mission, energized, run, onOpen
       {mission.scene === "calls" && <CallTree events={events} />}
       {mission.scene === "grid" && <GridScene events={events} />}
       {mission.scene === "files" && <FilesScene />}
+      {mission.scene === "repo" && <RepoScene />}
       {(mission.scene === "work" || mission.scene === "sort" || mission.scene === "calls" || mission.scene === "grid") && (
         <WorkMeter events={events} hideWhenEmpty={mission.scene !== "work"} />
       )}

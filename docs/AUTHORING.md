@@ -174,7 +174,7 @@ kind: terminal
 title: Grep for the faults
 system: Log store
 symbol: instrument
-scene: files                 # files: a live map of the home folder; console: no panel
+scene: files                 # files: a live map of the home folder; repo: a Git repository's history; console: no panel
 skills: reading-files
 ---
 
@@ -193,6 +193,8 @@ skills: reading-files
 
 With a `## Report`, the bench shows an answer box under the terminal, and `answer()` returns what's in it. Use it for missions about finding something out, like the line `grep` matched or the code in a hidden file.
 
+`scene: repo` draws a Git repository beside the terminal, refreshed after every command: its commits as a graph across every branch, branch and remote-tracking labels, HEAD, and the staged, changed, and untracked files. It shows the repository the terminal is in, or, while the terminal isn't in one, the one named by `repo: ~/tools` in the front matter. Use `scene: console` instead for a report whose answer the panel would show before the player has done anything, such as a commit's hash or the branch HEAD is on. When the answer only appears once they've run the command the mission teaches, as in Fetch from the valley, keep the panel: watching it change is part of the lesson.
+
 ### Checks run in the machine
 
 Checks are Python, run by the check agent as root, so they can read anything. These helpers come with them (`src/relay/checks.ts`):
@@ -202,19 +204,44 @@ Checks are Python, run by the check agent as root, so they can read anything. Th
 | `run(command, cwd="~", input=None)` | Runs bash as the player. Returns `.out`, `.err`, and `.code`. `root=True` runs as root. |
 | `sh(command)` | What a command prints, without its final newline |
 | `read(path)`, `exists(path)`, `is_file(path)`, `is_dir(path)`, `listing(path)` | Files, with `~` and relative paths from home. `read` and `listing` give `None` when there's nothing there. |
-| `mode(path)`, `owner(path)` | Permissions as `ls -l` shows them (`"rw-r--r--"`), and the owner's name |
+| `mode(path)`, `owner(path)` | Permissions as `ls -l` shows them (`"rw-r--r--"`), and the owner's name; `None` when there's nothing there |
 | `cwd()` | The terminal's directory, written with `~` |
 | `history()`, `commands()`, `ran(program)`, `calls(program)`, `assigned(name)` | What the player typed: lines, programs, whether one ran, each run's arguments, a shell variable's values |
-| `answer()` | The report box, trimmed |
+| `answer()` | The report box, trimmed, without quotes or backticks around it |
 | `check(label, passed, hint)`, `expect(label, got, expected, hint, accept=None, reveal=True)` | Record a check. `got` and `passed` may be functions, and an exception becomes a failed check. `reveal=False` keeps the expected answer out of the failure message. |
 
+For Git, these read a repository as the player, and give `None` or an empty list when there isn't one. The repository is a folder, `~/tools`, or a bare one, `/srv/archive/tools.git`:
+
+| Helper | Gives |
+|---|---|
+| `git(args, repo="~")` | What a git command prints |
+| `is_repo(path)` | Whether `path` is the top folder of a repository |
+| `rev(repo, ref="HEAD")` | The full hash a branch, hash, or `HEAD~1` names |
+| `commits(repo, ref="HEAD")` | The commits reachable from `ref`, newest first: dicts with `hash`, `parents`, `author`, `committer`, `message` (its first line) |
+| `latest(repo, ref="HEAD")` | The newest of those, or one whose fields are empty when there are no commits, so `latest(repo)["message"]` is safe |
+| `branch(repo)`, `branches(repo, remote=False)` | The branch HEAD is on (`None` when detached), and every local or remote-tracking branch |
+| `tracked(repo, ref="HEAD")`, `show(repo, ref, path)` | The files in a commit, and one file as a commit has it (`ref=""` for the staging area) |
+| `status(repo)`, `staged(repo)`, `changed(repo)`, `untracked(repo)` | `git status --short` lines, and the files in each state |
+| `config(key, repo="~", scope=None, all=False)` | A setting as Git sees it from `repo`, or only from `scope` (`"global"`, `"local"`, `"system"`); every value with `all=True` |
+| `git_calls(subcommand)` | The arguments of each `git <subcommand>` the player ran, skipping git's own options like `--no-pager` |
+
 Prefer checking the machine over checking history: whether the file is in the right place, whether the program prints the right thing. History tells you *how*, and is right for missions about a command itself (`echo`, `cd`, `history`), but players reach the same state in many ways.
+
+Setup scripts can use a few shell functions:
+
+| Function | Does |
+|---|---|
+| `player_git` | Makes the Git settings from Sign your work: `user.name` Ranger, `user.email` ranger@kestrel.ridge, `init.defaultBranch` main. It also sets `pull.rebase` to `false`, which When a push is refused explains, so a pull between branches that have both moved on merges instead of stopping with an error. Player setup only: as root, it would leave a `.gitconfig` that root owns. |
+| `commit_as "Mara Okafor" "2026-11-03 09:12" "Lower the beacon power"` | Commits what's staged as that person, at that time (UTC) |
+| `as_crew "Ines Varga" "2026-11-04 10:00" git merge -q --no-edit retune` | Runs any Git command as that person, at that time. Set `COMMITTER` to record someone else as the committer. |
+
+Commits made with them have the same hashes for every player, so a check or report can name one. Build the history once, read the hashes, and write them in. To give the player a remote, make `/srv/archive` theirs in the root setup and put bare repositories there in the player setup; `/srv` is saved with their files.
 
 Hardcode expected answers instead of computing them from files the player can change. A player who empties a log shouldn't make "0" the right answer. Where the check has to run the player's program on other input, write that input to `/tmp`.
 
 ### Solutions are typed
 
-The tests reset the machine, run the setup, type each solution line into the real shell and wait for the next prompt, then require every check to pass. Before the solution, at least one check must fail. A heredoc (`cat > file <<'EOF'` ... `EOF`) is typed as one command. Players edit in `nano` and read in `less`, but the tests can't, so a solution uses an unattended equivalent with a comment saying so: `sed -i` or `printf` for an edit, `less file | grep ...` for reading (`less` prints the file when its output isn't a terminal), and `echo outpost | sudo -S -p "" ...` for `sudo`.
+The tests reset the machine, run the setup, type each solution line into the real shell and wait for the next prompt, then require every check to pass. Before the solution, at least one check must fail. A heredoc (`cat > file <<'EOF'` ... `EOF`) is typed as one command. Players edit in `nano` and read in `less`, but the tests can't, so a solution uses an unattended equivalent with a comment saying so: `sed -i` or `printf` for an edit, `less file | grep ...` for reading (`less` prints the file when its output isn't a terminal), and `echo outpost | sudo -S -p "" ...` for `sudo`. Git opens `less` and `nano` too: use `git --no-pager log`, `git commit -m`, and `--no-edit` for merges and pulls.
 
 `npm run vm` rebuilds the machine after changes to `vm/` or the relay stages of the `Dockerfile`. The tests skip terminal missions until it has been built.
 

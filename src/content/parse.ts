@@ -10,7 +10,7 @@ export type SupportLevel = (typeof SUPPORT_LEVELS)[number];
 const KINDS = ["code", "predict", "terminal"] as const;
 export type MissionKind = (typeof KINDS)[number];
 
-const SCENES = ["console", "tests", "drone", "work", "sort", "calls", "grid", "files"] as const;
+const SCENES = ["console", "tests", "drone", "work", "sort", "calls", "grid", "files", "repo"] as const;
 export type Scene = (typeof SCENES)[number];
 
 const SYMBOLS = ["equipment", "instrument", "controller"] as const;
@@ -50,6 +50,9 @@ export interface Mission {
   rootSetup: string;
   setup: string;
   report: Report | null;
+  // The Git repository the repo scene shows while the terminal isn't inside
+  // one, such as "~/tools"; empty for none.
+  repo: string;
 }
 
 export interface Report {
@@ -136,7 +139,7 @@ export function parseMission(source: string, file: string, region = ""): Mission
     restored: prose("restored"),
   };
 
-  const noTerminal = { rootSetup: "", setup: "", report: null };
+  const noTerminal = { rootSetup: "", setup: "", report: null, repo: "" };
 
   if (kind === "predict") {
     return {
@@ -166,6 +169,7 @@ export function parseMission(source: string, file: string, region = ""): Mission
       rootSetup: optionalCode("root setup") ?? "",
       setup: optionalCode("setup") ?? "",
       report: report === undefined ? null : { question: question!, answer: code("report").trim() },
+      repo: meta.get("repo") ?? "",
     };
   }
 

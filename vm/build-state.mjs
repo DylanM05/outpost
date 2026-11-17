@@ -28,7 +28,16 @@ const settings = {
 
 // Programs most missions use, run once before saving so they're already in
 // the state rather than fetched file by file on a player's first command.
-const WARM = ["git --version", "python3 -c pass", "nano --version", "less --version", "tree --version", "man -w ls"];
+const WARM = [
+  "git --version",
+  "python3 -c pass",
+  "nano --version",
+  "less --version",
+  "tree --version",
+  "man -w ls",
+  // The archive's everyday Git, including what the repo scene runs after every command.
+  "cd /tmp && git init -q warm && cd warm && echo a > a && git add a && git -c user.name=w -c user.email=w@w commit -qm w && git log --all --graph --oneline && git for-each-ref && git status --porcelain && git diff && git config list && man -w git-commit; rm -rf /tmp/warm",
+];
 
 const started = Date.now();
 const elapsed = () => `${((Date.now() - started) / 1000).toFixed(1)}s`;
