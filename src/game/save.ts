@@ -1,9 +1,18 @@
+import { isConfidence } from "./confidence";
 import { finishReview, type ReviewState } from "./maintenance";
 import type { SkillId } from "../content/skills";
 import type { SupportLevel } from "../content/parse";
 
 export type Experience = "new" | "tutorials" | "small-programs" | "experienced";
 export type Background = "python" | "other-language" | "terminal" | "git";
+export type Confidence = "unsure" | "likely" | "certain";
+
+export interface ConfidenceRecord {
+  missionId: string;
+  confidence: Confidence;
+  passed: boolean;
+  at: string;
+}
 
 export interface Profile {
   experience: Experience;
@@ -35,11 +44,13 @@ export interface SaveData {
   reviews: Partial<Record<SkillId, ReviewState>>;
   // Missions the player switched to a different support level while stuck.
   missionSupport: Record<string, SupportLevel>;
+  // Optional pre-submit confidence judgments recorded for self-calibration.
+  confidenceLog: ConfidenceRecord[];
 }
 
 export type Action =
   | { type: "review-start"; skill: SkillId; missionId: string; state: ReviewState; now?: string }
-  | { type: "review-submitted"; skill: SkillId; missionId: string; round: number; passed: boolean; now?: string }
+  | { type: "review-submitted"; skill: SkillId; missionId: string; round: number; passed: boolean; confidence?: Confidence; now?: string }
   | { type: "start"; profile: Profile; missionId: string }
   | { type: "set-support"; support: SupportLevel | "adaptive" }
   | { type: "pin-support"; missionId: string; support: SupportLevel }
@@ -47,7 +58,7 @@ export type Action =
   | { type: "edit"; missionId: string; code: string }
   | { type: "reset-code"; missionId: string }
   | { type: "reveal-hint"; missionId: string }
-  | { type: "submitted"; missionId: string; passed: boolean; support: SupportLevel; alsoRestores: string[] }
+  | { type: "submitted"; missionId: string; passed: boolean; support: SupportLevel; alsoRestores: string[]; confidence?: Confidence; now?: string }
   | { type: "replay"; missionId: string }
   | { type: "change-profile" }
   | { type: "load"; save: SaveData }
@@ -64,6 +75,7 @@ export function emptySave(): SaveData {
     completions: {},
     reviews: {},
     missionSupport: {},
+    confidenceLog: [],
   };
 }
 
@@ -90,10 +102,13 @@ export function reducer(save: SaveData, action: Action): SaveData {
     case "review-submitted": {
       const state = save.reviews[action.skill];
       if (!state?.active || state.missionId !== action.missionId || state.round !== action.round) return save;
-      const submits = (save.submits[action.missionId] ?? 0) + 1;
-      const next = { ...save, submits: { ...save.submits, [action.missionId]: submits } };
-      if (!action.passed) return next;
       const at = action.now ?? new Date().toISOString();
+      const submits = (save.submits[action.missionId] ?? 0) + 1;
+      const confidenceLog = action.confidence
+        ? [...save.confidenceLog, { missionId: action.missionId, confidence: action.confidence, passed: action.passed, at }]
+        : save.confidenceLog;
+      const next = { ...save, submits: { ...save.submits, [action.missionId]: submits }, confidenceLog };
+      if (!action.passed) return next;
       const hintsUsed = save.hintsRevealed[action.missionId] ?? 0;
       const clean = hintsUsed === 0 && submits <= 2;
       const completion: Completion = { at, hintsUsed, submits, support: "challenge", viaAssessment: false, maintenance: true };
@@ -129,12 +144,15 @@ export function reducer(save: SaveData, action: Action): SaveData {
       return { ...save, hintsRevealed: { ...save.hintsRevealed, [action.missionId]: revealed } };
     }
     case "submitted": {
-      const { missionId, passed, support, alsoRestores } = action;
+      const { missionId, passed, support, alsoRestores, confidence } = action;
+      const at = action.now ?? new Date().toISOString();
       const submits = (save.submits[missionId] ?? 0) + 1;
-      const next = { ...save, submits: { ...save.submits, [missionId]: submits } };
+      const confidenceLog = confidence
+        ? [...save.confidenceLog, { missionId, confidence, passed, at }]
+        : save.confidenceLog;
+      const next = { ...save, submits: { ...save.submits, [missionId]: submits }, confidenceLog };
       if (!passed) return next;
 
-      const at = new Date().toISOString();
       const hintsUsed = save.hintsRevealed[missionId] ?? 0;
       const completions = { ...save.completions };
       completions[missionId] = [...(completions[missionId] ?? []), { support, hintsUsed, submits, at, viaAssessment: false }];
@@ -181,6 +199,21 @@ export function parseSave(raw: string): SaveData | null {
             !Number.isFinite(Date.parse(state.dueAt)) ||
             (state.independentAt !== undefined && !Number.isFinite(Date.parse(state.independentAt))) ||
             (state.retainedAt !== undefined && !Number.isFinite(Date.parse(state.retainedAt)))) return null;
+      }
+    }
+    if (data.confidenceLog !== undefined) {
+      if (!Array.isArray(data.confidenceLog)) return null;
+      for (const entry of data.confidenceLog) {
+        if (
+          !entry ||
+          typeof entry !== "object" ||
+          typeof entry.missionId !== "string" ||
+          !isConfidence(entry.confidence) ||
+          typeof entry.passed !== "boolean" ||
+          !Number.isFinite(Date.parse(entry.at))
+        ) {
+          return null;
+        }
       }
     }
     return { ...emptySave(), ...data } as SaveData;

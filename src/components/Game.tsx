@@ -14,7 +14,7 @@ import {
   supportFor,
   systemProgress,
 } from "../game/rules";
-import { parseSave, type Action, type Profile, type SaveData } from "../game/save";
+import { parseSave, type Action, type Confidence, type Profile, type SaveData } from "../game/save";
 import { passedAll } from "../python/harness";
 import { PythonRunner, type RunnerStatus } from "../python/runner";
 import { relay } from "../relay/session";
@@ -44,6 +44,7 @@ export function Game({ save, profile, dispatch }: Props) {
   const [lastRun, setLastRun] = useState<RunRecord | null>(null);
   const [energized, setEnergized] = useState<string | null>(null);
   const [skillsOpen, setSkillsOpen] = useState(false);
+  const [confidence, setConfidence] = useState<Confidence | null>(null);
   const [now, setNow] = useState(Date.now);
   useEffect(() => {
     const tick = () => setNow(Date.now());
@@ -71,7 +72,7 @@ export function Game({ save, profile, dispatch }: Props) {
   const online = regionSystems.filter((s) => systemProgress(missions, s, save).state === "online").length;
   const assessment = missions.find((m) => m.assessment);
 
-  const open = (missionId: string) => { setLastRun(null); dispatch({ type: "open", missionId }); };
+  const open = (missionId: string) => { setLastRun(null); setConfidence(null); dispatch({ type: "open", missionId }); };
 
   async function execute(requested: RunMode) {
     if (busy || (mission.reviewSkill && !review?.active)) return;
@@ -80,6 +81,7 @@ export function Game({ save, profile, dispatch }: Props) {
     const predicting = target.kind === "predict";
     const mode: RunMode = predicting ? "submit" : requested;
     const prediction = predicting ? code : undefined;
+    const chosenConfidence = mode === "submit" ? confidence : null;
     setBusy(mode);
     const outcome =
       target.kind === "terminal"
@@ -90,6 +92,7 @@ export function Game({ save, profile, dispatch }: Props) {
     setBusy(null);
     setLastRun({ missionId: target.id, mode, outcome, key: ++runCount, prediction });
     if (mode !== "submit") return;
+    setConfidence(null);
 
     const passed =
       outcome.kind === "finished" &&
@@ -102,11 +105,25 @@ export function Game({ save, profile, dispatch }: Props) {
         ? missions.filter((m) => m !== target && m.region === target.region && !isRestored(save, m.id)).map((m) => m.id)
         : [];
     if (target.reviewSkill && review) {
-      dispatch({ type: "review-submitted", skill: target.reviewSkill, missionId: target.id, round: review.round, passed });
+      dispatch({
+        type: "review-submitted",
+        skill: target.reviewSkill,
+        missionId: target.id,
+        round: review.round,
+        passed,
+        confidence: chosenConfidence ?? undefined,
+      });
       setNow(Date.now());
       return;
     }
-    dispatch({ type: "submitted", missionId: target.id, passed, support: supportFor(target, save, allMissions), alsoRestores });
+    dispatch({
+      type: "submitted",
+      missionId: target.id,
+      passed,
+      support: supportFor(target, save, allMissions),
+      alsoRestores,
+      confidence: chosenConfidence ?? undefined,
+    });
 
     if (passed && !isRestored(save, target.id)) {
       const targetSystem = systemOf(target);
@@ -198,6 +215,8 @@ export function Game({ save, profile, dispatch }: Props) {
           onReset={() => dispatch({ type: "reset-code", missionId: mission.id })}
           onExecute={(mode) => void execute(mode)}
           onOpen={open}
+          confidence={confidence}
+          onConfidence={setConfidence}
           easierStart={easierStart(mission, save, support)}
           onEasierStart={() => {
             const level = easierStart(mission, save, support);
