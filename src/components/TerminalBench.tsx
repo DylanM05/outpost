@@ -66,11 +66,21 @@ export function TerminalBench(props: BenchProps) {
         </div>
       )}
 
-      <div className="controls">
-        <button className="run" onClick={check} disabled={blocked}>
+      <div className="controls" data-tour="bench-controls">
+        <button
+          className="run"
+          disabled={blocked}
+          title="Check what you've done on the relay machine without recording a submission"
+          onClick={check}
+        >
           Check <kbd>{MOD_KEY}+Enter</kbd>
         </button>
-        <button className="submit" onClick={submit} disabled={blocked}>
+        <button
+          className="submit"
+          disabled={blocked}
+          title="Run all checks including hidden ones to finish the mission"
+          onClick={submit}
+        >
           Submit <kbd>{MOD_KEY}+Shift+Enter</kbd>
         </button>
         {shouldShowConfidence(mission, props.support, props.completed) && (

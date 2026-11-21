@@ -78,7 +78,12 @@ function CodeBench(props: BenchProps) {
         <span className="support-note">
           {supportNote(props.support)}
         </span>
-        <button className="quiet" onClick={props.onReset} disabled={!props.edited || props.completed}>
+        <button
+          className="quiet"
+          title="Restore this mission's starter code"
+          onClick={props.onReset}
+          disabled={!props.edited || props.completed}
+        >
           Reset code
         </button>
       </div>
@@ -94,11 +99,21 @@ function CodeBench(props: BenchProps) {
         onSubmit={() => props.onExecute("submit")}
       />
 
-      <div className="controls">
-        <button className="run" onClick={() => props.onExecute("run")} disabled={busy !== null || props.completed}>
+      <div className="controls" data-tour="bench-controls">
+        <button
+          className="run"
+          disabled={busy !== null || props.completed}
+          title="Try your code against the visible examples without recording a submission"
+          onClick={() => props.onExecute("run")}
+        >
           Run <kbd>{MOD_KEY}+Enter</kbd>
         </button>
-        <button className="submit" onClick={() => props.onExecute("submit")} disabled={busy !== null || props.completed}>
+        <button
+          className="submit"
+          disabled={busy !== null || props.completed}
+          title="Run all tests including hidden edge cases to finish the repair"
+          onClick={() => props.onExecute("submit")}
+        >
           Submit <kbd>{MOD_KEY}+Shift+Enter</kbd>
         </button>
         {shouldShowConfidence(mission, props.support, props.completed) && (
@@ -165,7 +180,7 @@ function PredictBench(props: BenchProps) {
         <p className="note">Capital letters, spaces within a line, and blank lines all count.</p>
       </div>
 
-      <div className="controls">
+      <div className="controls" data-tour="bench-controls">
         <button className="submit" onClick={check} disabled={busy !== null || props.completed}>
           Check prediction <kbd>{MOD_KEY}+Enter</kbd>
         </button>

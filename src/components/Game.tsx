@@ -22,6 +22,7 @@ import { relay } from "../relay/session";
 import { AtlasDialog } from "./AtlasDialog";
 import { Bench, type RunMode, type RunRecord } from "./Bench";
 import { Brief } from "./Brief";
+import { ControlRoomTour, hasSeenTour } from "./ControlRoomTour";
 import { Maintenance } from "./Maintenance";
 import { Plant } from "./Plant";
 import { MOD_KEY } from "./Results";
@@ -50,9 +51,18 @@ export function Game({ save, profile, dispatch }: Props) {
   const [energized, setEnergized] = useState<string | null>(null);
   const [skillsOpen, setSkillsOpen] = useState(false);
   const [atlasOpen, setAtlasOpen] = useState(false);
+  const [tourOpen, setTourOpen] = useState(false);
   const [mobilePane, setMobilePane] = useState<MobilePane>("brief");
   const [confidence, setConfidence] = useState<Confidence | null>(null);
   const [now, setNow] = useState(Date.now);
+
+  useEffect(() => {
+    if (Object.keys(save.completions).length === 0 && !hasSeenTour()) {
+      setTourOpen(true);
+    }
+    // Only auto-start on initial entry into the control room.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     const tick = () => setNow(Date.now());
@@ -167,7 +177,9 @@ export function Game({ save, profile, dispatch }: Props) {
           <span className="wordmark">Outpost</span>
           <button
             className="region-switcher"
+            data-tour="region-switcher"
             onClick={() => setAtlasOpen(true)}
+            title="Open the Station Atlas to browse all 14 acts or search missions"
             aria-haspopup="dialog"
             aria-label={`Open station atlas. Currently in ${currentRegionMeta.act}, ${currentRegionMeta.name}, ${online} of ${regionSystems.length} systems online.`}
           >
@@ -179,8 +191,8 @@ export function Game({ save, profile, dispatch }: Props) {
             <kbd>{MOD_KEY}+K</kbd>
           </button>
         </div>
-        <div className="topbar-actions">
-          <label className="support-picker">
+        <div className="topbar-actions" data-tour="topbar-tools">
+          <label className="support-picker" title="Controls how much starter code and lesson guidance you get">
             <span>Support</span>
             <select
               value={mission.reviewSkill || mission.assessment ? "challenge" : (profile.fixedSupport ?? "adaptive")}
@@ -195,11 +207,22 @@ export function Game({ save, profile, dispatch }: Props) {
               ))}
             </select>
           </label>
-          <button className="quiet skills-trigger" onClick={() => setSkillsOpen(true)}>
+          <button
+            className="quiet skills-trigger"
+            title="Inspect skills you've practiced, demonstrated, or retained"
+            onClick={() => setSkillsOpen(true)}
+          >
             Skills
             {provenSkills > 0 && <span className="topbar-badge">{provenSkills}</span>}
           </button>
-          <ProgressMenu save={save} dispatch={dispatch} />
+          <button
+            className="quiet"
+            title="Walk through the control room panels and shortcuts"
+            onClick={() => setTourOpen(true)}
+          >
+            Guide
+          </button>
+          <ProgressMenu save={save} dispatch={dispatch} onStartTour={() => setTourOpen(true)} />
         </div>
       </header>
 
@@ -311,6 +334,12 @@ export function Game({ save, profile, dispatch }: Props) {
           setMobilePane("brief");
         }}
       />
+
+      <ControlRoomTour
+        open={tourOpen}
+        onClose={() => setTourOpen(false)}
+        onFocusPane={setMobilePane}
+      />
     </div>
   );
 }
@@ -321,7 +350,15 @@ const THEME_OPTIONS: { id: ThemePreference; label: string }[] = [
   { id: "dark", label: "Night" },
 ];
 
-function ProgressMenu({ save, dispatch }: { save: SaveData; dispatch: Dispatch<Action> }) {
+function ProgressMenu({
+  save,
+  dispatch,
+  onStartTour,
+}: {
+  save: SaveData;
+  dispatch: Dispatch<Action>;
+  onStartTour(): void;
+}) {
   const [message, setMessage] = useState<string | null>(null);
   const [theme, setTheme] = useState<ThemePreference>(() => loadTheme());
   const detailsRef = useRef<HTMLDetailsElement>(null);
@@ -405,6 +442,14 @@ function ProgressMenu({ save, dispatch }: { save: SaveData; dispatch: Dispatch<A
             e.target.value = "";
           }}
         />
+        <button
+          onClick={() => {
+            if (detailsRef.current) detailsRef.current.open = false;
+            onStartTour();
+          }}
+        >
+          Replay control room guide
+        </button>
         <button
           onClick={() => {
             if (detailsRef.current) detailsRef.current.open = false;

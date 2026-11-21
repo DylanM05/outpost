@@ -1,6 +1,7 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { expect, test } from "vitest";
 import { AtlasDialog } from "../src/components/AtlasDialog";
+import { ControlRoomTour, TOUR_STEPS } from "../src/components/ControlRoomTour";
 import { Game } from "../src/components/Game";
 import { Plant } from "../src/components/Plant";
 import { SkillsDialog } from "../src/components/SkillsDialog";
@@ -97,4 +98,23 @@ test("Plant puts live scenes ahead of the mimic board and keeps the board first 
     />,
   );
   expect(codeHtml.indexOf('class="mimic"')).toBeLessThan(codeHtml.indexOf("Station log"));
+});
+
+
+test("ControlRoomTour renders step guidance and Game exposes Guide trigger and data-tour targets", () => {
+  const save = emptySave();
+  save.profile = { experience: "new", background: [], support: "guided" };
+  save.currentMission = missions[0].id;
+  const gameHtml = renderToStaticMarkup(<Game save={save} profile={save.profile} dispatch={() => {}} />);
+
+  expect(gameHtml).toContain("Guide");
+  expect(gameHtml).toContain("Replay control room guide");
+  for (const step of TOUR_STEPS) {
+    expect(gameHtml).toContain(`data-tour="${step.target}"`);
+  }
+
+  const tourHtml = renderToStaticMarkup(<ControlRoomTour open onClose={() => {}} />);
+  expect(tourHtml).toContain(`Step 1 of ${TOUR_STEPS.length}`);
+  expect(tourHtml).toContain(TOUR_STEPS[0].title);
+  expect(tourHtml).toContain("Skip tour");
 });

@@ -76,9 +76,9 @@ export function Brief({
       : null;
 
   return (
-    <section className="brief" aria-labelledby="mission-title">
+    <section className="brief" data-tour="brief" aria-labelledby="mission-title">
       <div className="brief-context">
-        <button className="brief-region-link" onClick={onOpenAtlas}>
+        <button className="brief-region-link" title="Open the Station Atlas to jump to another region or mission" onClick={onOpenAtlas}>
           <span className="act-plate">{region.act}</span>
           <span>{region.name}</span>
         </button>

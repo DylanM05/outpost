@@ -99,7 +99,7 @@ export function Schematic({ missions, systems, save, act, title, currentSystem, 
   };
 
   return (
-    <figure className="mimic" ref={figure}>
+    <figure className="mimic" data-tour="mimic-board" ref={figure}>
       {title && (
         <div className="mimic-head">
           <span className="mimic-title-group">
