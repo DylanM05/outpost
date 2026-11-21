@@ -95,8 +95,12 @@ await until(() => shell.includes("ranger@relay"), "the player's shell");
 await until(() => agent.includes('{"ready": true}'), "the check agent");
 console.log(`[vm] shell and agent up after ${elapsed()}`);
 
+// The check agent imports pytest once, here, so the saved state has it
+// loaded: tests_in() forks the agent to run a player's tests in a fraction of
+// a second, where starting pytest takes several.
 await run(`
 import subprocess
+import pytest
 for command in ${JSON.stringify(WARM)}:
     subprocess.run(command, shell=True, capture_output=True, cwd="/home/ranger")
 subprocess.run("sync; echo 3 > /proc/sys/vm/drop_caches", shell=True)

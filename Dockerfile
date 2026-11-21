@@ -8,10 +8,13 @@
 # The relay terminal's Linux system. It's 32-bit Alpine because v86 emulates a
 # 32-bit PC. `npm run vm` builds just these stages for local development.
 FROM --platform=linux/386 docker.io/i386/alpine:3.24.4 AS relay-rootfs
+# pyc installs the precompiled bytecode Alpine packages separately: the player
+# can't write Python's cache under /usr/lib, so without it pytest would be
+# compiled again on every run.
 RUN apk add --no-cache \
       openrc alpine-base linux-virt linux-firmware-none \
       bash coreutils findutils grep sed diffutils file tree less nano mandoc \
-      git python3 sudo procps-ng \
+      git python3 py3-pytest pyc sudo procps-ng \
       bash-doc coreutils-doc findutils-doc grep-doc sed-doc diffutils-doc file-doc tree-doc less-doc nano-doc mandoc-doc git-doc procps-ng-doc sudo-doc
 # The player is "ranger". The game's check agent runs as root on the second
 # serial port, out of the player's sight, and starts the player's login shell

@@ -88,6 +88,30 @@ export const SKILLS = {
     name: "Remotes",
     summary: "Connect repositories, fetch, pull, and push, and share work through a shared repository.",
   },
+  classes: {
+    name: "Classes",
+    summary: "Define classes with constructors and methods, make objects from them, and keep each object's data with it.",
+  },
+  encapsulation: {
+    name: "Encapsulation and abstraction",
+    summary: "Keep an object's data behind its methods, refuse bad changes with exceptions, and give a class a simple interface over its details.",
+  },
+  inheritance: {
+    name: "Inheritance",
+    summary: "Build child classes that reuse, extend, and override a parent's methods, and know when inheritance fits.",
+  },
+  polymorphism: {
+    name: "Polymorphism",
+    summary: "Treat different classes the same way through shared methods, and make objects print, compare, and sort with special methods.",
+  },
+  modules: {
+    name: "Modules",
+    summary: "Split a program into files, import from them, and write files that work as both a module and a program.",
+  },
+  testing: {
+    name: "Testing",
+    summary: "Write and run tests with pytest, test for errors, and let failing tests point to bugs.",
+  },
 } as const;
 
 export type SkillId = keyof typeof SKILLS;

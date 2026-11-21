@@ -227,6 +227,16 @@ For Git, these read a repository as the player, and give `None` or an empty list
 
 Prefer checking the machine over checking history: whether the file is in the right place, whether the program prints the right thing. History tells you *how*, and is right for missions about a command itself (`echo`, `cd`, `history`), but players reach the same state in many ways.
 
+For Python projects on the machine, checks can run the player's tests, and run tests on copies of their project:
+
+| Helper | Gives |
+|---|---|
+| `tests_in(folder)` | Runs every `test_` function in the folder's `test_*.py` files as the player, and returns `{name: "passed"}` or `{name: "failed: AssertionError: ..."}`. A file that can't be imported appears under its own name. |
+| `copy_of(folder, changes)` | A copy of the project in `/tmp`, with `{path: "text"}` writing a file and `{path: (old, new)}` replacing text in one |
+| `mutant(folder, path, old, new)` | A copy with a bug put in, to check that the player's test catches it: `tests_in(mutant(...))["test_fly_uses_battery"]` should start with `"failed"` |
+
+Starting pytest takes about four seconds on the emulated machine, nearly all of it importing pytest. The check agent imports it once, before the machine's state is saved (`vm/build-state.mjs`), and `tests_in` forks the agent to run tests, so a run takes a fraction of a second. It calls test functions directly, so plain `assert` and `pytest.raises` work, but fixtures don't, and `assert` failures don't show pytest's detailed values: give an `assert` a message when a check reports it. To check behaviour in an independent mission, write the checks' own tests as a string, add them to a copy with `copy_of`, and report each one; see `12a-extend-the-fleet.md`.
+
 Setup scripts can use a few shell functions:
 
 | Function | Does |

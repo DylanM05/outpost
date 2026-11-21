@@ -8,6 +8,7 @@ It's playable entirely in the browser:
 - **The survey office**, the first algorithms region: 29 missions on measuring work, binary search, sorting, recursion, merge sort, hashing, flood fill, and breadth-first search. Work budgets fail slow solutions, and the side panel shows your code at work: sorting bars, a call tree, and a map that lights up as your search explores it.
 - **The relay line**: 43 missions in a real Linux terminal that runs inside the page. They cover the command line, files and folders, reading and searching files, running and writing Python programs from the shell, input and output, and permissions. The region ends by building `logscan`, a real command-line tool, and bringing the last relay online on your own.
 - **The archive**: 44 missions of Git on the same Linux machine, in roughly the order Boot.dev's Learn Git teaches it: setting Git up, staging and committing, reading diffs and history, what Git stores inside a commit, settings, branches, merging, rebasing, undoing with restore and reset, remotes, cloning, pushing and pulling, and `.gitignore`. A panel beside the terminal draws the repository as you work: its commits, branches, and changed files. The region puts `logscan` under version control, and ends with recovering a broken repository from its history.
+- **The workshop**: 35 missions of object-oriented programming, in the order Boot.dev's Learn OOP teaches it: clean code, classes and objects, constructors, class and instance attributes, encapsulation, raising exceptions, abstraction, inheritance, polymorphism, and special methods like `__str__`, `__eq__`, and `__lt__`. A guided build in the editor turns them into fleet control for the outpost's drones. Then the region moves to the relay terminal, to split the code into modules and packages and test it with pytest, and ends with extending fleet control, tests and all, on your own.
 - **21 spaced maintenance calls** that bring back earlier skills.
 
 ## What's in it
@@ -32,7 +33,7 @@ npm run vm       # builds the relay terminal's Linux machine into public/vm (nee
 npm run dev      # http://localhost:5173
 ```
 
-`npm run vm` takes about two minutes and only needs re-running when `vm/` or the relay stages of the `Dockerfile` change. Restart `npm run dev` afterwards: Vite's dev server can miss thousands of files being replaced at once. Without it, everything but the relay line and the archive still works, and terminal missions say the machine isn't installed.
+`npm run vm` takes about two minutes and only needs re-running when `vm/` or the relay stages of the `Dockerfile` change. Restart `npm run dev` afterwards: Vite's dev server can miss thousands of files being replaced at once. Without it, missions in the editor still work, and terminal missions say the machine isn't installed.
 
 Other scripts:
 
@@ -55,8 +56,8 @@ The image is a static site served by nginx, and it builds the relay machine too.
 ## How it works
 
 - **Learner code never runs on the server.** Python runs in the player's browser through [Pyodide](https://pyodide.org) (Python 3.14 compiled to WebAssembly), inside a Web Worker. The worker is terminated and replaced if a run goes past its time limit. The Python runtime ships with the game, so nothing is loaded from a CDN, and a self-hosted copy works offline.
-- **The relay terminal is a real Linux machine running in the page.** [v86](https://github.com/copy/v86) emulates a 32-bit PC in WebAssembly, running a small Alpine Linux with bash, coreutils, nano, less, man pages, Python 3.14, and Git. The game downloads about 13 MB once: a saved state taken just after boot, so the terminal is ready in a few seconds. Each file of the system is then fetched only when something reads it. A check agent on the machine's second serial port, out of the player's sight, sets up each mission and checks it. The player's files are saved in the browser (IndexedDB) after every command. See [vm/](vm/) and [src/relay/](src/relay/).
-- **Missions are Markdown files** in region folders (`src/content/act1/` to `act4/`) and `src/content/maintenance/`. Each one holds the story, lesson, starter code for each support level, hints, tests, and a reference solution. See [docs/AUTHORING.md](docs/AUTHORING.md).
+- **The relay terminal is a real Linux machine running in the page.** [v86](https://github.com/copy/v86) emulates a 32-bit PC in WebAssembly, running a small Alpine Linux with bash, coreutils, nano, less, man pages, Python 3.14, pytest, and Git. The game downloads about 15 MB once: a saved state taken just after boot, so the terminal is ready in a few seconds. Each file of the system is then fetched only when something reads it. A check agent on the machine's second serial port, out of the player's sight, sets up each mission and checks it. The player's files are saved in the browser (IndexedDB) after every command. See [vm/](vm/) and [src/relay/](src/relay/).
+- **Missions are Markdown files** in region folders (`src/content/act1/` to `act5/`) and `src/content/maintenance/`. Each one holds the story, lesson, starter code for each support level, hints, tests, and a reference solution. See [docs/AUTHORING.md](docs/AUTHORING.md).
 - **Progress lives in the browser's local storage.** There are no accounts yet, so a different browser or device starts fresh unless you restore a backup.
 
 ```

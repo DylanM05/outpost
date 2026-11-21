@@ -7,22 +7,28 @@
 //   history, commands, ran, calls, assigned, answer, check, expect,
 // and for Git repositories:
 //   git, is_repo, rev, commits, latest, branch, branches, tracked, show, status,
-//   staged, changed, untracked, config, git_calls
+//   staged, changed, untracked, config, git_calls,
+// and for Python projects:
+//   tests_in, copy_of, mutant
 import type { RunResult } from "../python/harness";
 
 export const LIBRARY_PY = String.raw`
 import base64
 import fcntl
+import importlib.util
 import io
 import json
 import os
 import pwd
 import re
+import select
 import shlex
+import shutil
 import signal
 import stat
 import struct
 import subprocess
+import sys
 import tarfile
 import termios
 import time
@@ -493,6 +499,108 @@ def _restart_shell():
                 os.kill(pid, signal.SIGKILL)
             except ProcessLookupError:
                 pass
+
+
+# Python projects: running the player's tests, and copies to run them on.
+
+
+def tests_in(folder, timeout=20):
+    # Runs every test function in folder's test_*.py files, as the player, and
+    # returns {name: "passed"} or {name: "failed: AssertionError: ..."}, or
+    # {"_error": ...} if they don't finish. It forks this process, which
+    # already has pytest imported (see vm/build-state.mjs), so it takes a
+    # fraction of a second where running pytest would take several. Plain
+    # test functions, assert, and pytest.raises work; fixtures don't.
+    folder = _full(folder)
+    reader, writer = os.pipe()
+    pid = os.fork()
+    if pid == 0:
+        code = 0
+        try:
+            os.close(reader)
+            quiet = os.open(os.devnull, os.O_RDWR)
+            for fd in (0, 1, 2):
+                os.dup2(quiet, fd)
+            sys.stdout = sys.stderr = io.StringIO()
+            os.setgroups(_GROUPS)
+            os.setgid(_PLAYER.pw_gid)
+            os.setuid(_PLAYER.pw_uid)
+            os.chdir(folder)
+            sys.dont_write_bytecode = True
+            sys.path.insert(0, folder)
+            results = {}
+            for name in sorted(os.listdir(folder)):
+                if not (name.startswith("test_") and name.endswith(".py")):
+                    continue
+                try:
+                    spec = importlib.util.spec_from_file_location(name[:-3], os.path.join(folder, name))
+                    module = importlib.util.module_from_spec(spec)
+                    sys.modules[name[:-3]] = module
+                    spec.loader.exec_module(module)
+                except BaseException as exc:
+                    results[name] = f"failed: {type(exc).__name__}: {exc}"
+                    continue
+                for attr, value in list(vars(module).items()):
+                    if attr.startswith("test") and callable(value) and getattr(value, "__module__", None) == name[:-3]:
+                        try:
+                            value()
+                            results[attr] = "passed"
+                        except BaseException as exc:
+                            results[attr] = f"failed: {type(exc).__name__}: {exc}".rstrip(": ")
+            data = json.dumps(results).encode()
+            while data:
+                data = data[os.write(writer, data):]
+        except BaseException:
+            code = 1
+        finally:
+            os._exit(code)
+    os.close(writer)
+    data = b""
+    deadline = time.time() + timeout
+    try:
+        while True:
+            left = deadline - time.time()
+            if left <= 0 or not select.select([reader], [], [], left)[0]:
+                os.kill(pid, signal.SIGKILL)
+                return {"_error": f"The tests didn't finish within {timeout} seconds."}
+            chunk = os.read(reader, 65536)
+            if not chunk:
+                break
+            data += chunk
+    finally:
+        os.close(reader)
+        os.waitpid(pid, 0)
+    return json.loads(data) if data else {"_error": "The tests couldn't run."}
+
+
+def copy_of(folder, changes=None):
+    # A copy of a project folder in /tmp, owned by the player, with changes
+    # made to it: {path: "text"} writes a file, {path: (old, new)} replaces
+    # text in one. Use it to run the player's tests on broken code, or the
+    # original tests on the player's code.
+    _RUN["copies"] = _RUN.get("copies", 0) + 1
+    copy = f"/tmp/outpost-copy-{_RUN['copies']}"
+    shutil.rmtree(copy, ignore_errors=True)
+    shutil.copytree(_full(folder), copy, symlinks=True, ignore=shutil.ignore_patterns("__pycache__", ".pytest_cache", ".git"))
+    for path, change in (changes or {}).items():
+        target = os.path.join(copy, path)
+        if isinstance(change, tuple):
+            old, new = change
+            with open(target) as file:
+                text = file.read()
+            if old not in text:
+                raise RuntimeError(f"{path} has changed from the original, so this check can't run on it. Start over to get the original back.")
+            change = text.replace(old, new, 1)
+        os.makedirs(os.path.dirname(target), exist_ok=True)
+        with open(target, "w") as file:
+            file.write(change)
+    subprocess.run(["chown", "-R", "ranger:ranger", copy])
+    return copy
+
+
+def mutant(folder, path, old, new):
+    # A copy of folder with a bug put in: old replaced by new in path.
+    return copy_of(folder, {path: (old, new)})
 
 
 # Shell functions every setup script can use; see docs/AUTHORING.md.
