@@ -60,11 +60,12 @@ describe.skipIf(!machineBuilt)("terminal missions on the relay machine", () => {
     expect(untouched.some((c) => !c.passed), "some check should fail before any work").toBe(true);
 
     for (const line of commandsOf(mission.solution)) {
-      const prompt = machine.nextPrompt(30_000);
+      // pytest takes seconds under emulation, and much longer on a busy host.
+      const prompt = machine.nextPrompt(120_000);
       machine.type(line + "\r");
       await prompt;
     }
     const solved = await checks(mission, mission.report?.answer ?? "");
     expect(solved.filter((c) => !c.passed)).toEqual([]);
-  }, 90_000);
+  }, 300_000);
 });

@@ -1,5 +1,5 @@
 // The page's one relay machine and the mission it's set up for. The machine
-// is about 13 MB to download, so it starts the first time a terminal mission
+// is about 15 MB to download, so it starts the first time a terminal mission
 // opens and then stays for the session, paused while no terminal is shown.
 //
 // Opening a mission restores the machine's saved state, then puts back the

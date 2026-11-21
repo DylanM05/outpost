@@ -130,7 +130,11 @@ export function CodeEditor(props: Props) {
   }, []);
 
   useEffect(() => {
-    view.current?.setState(createState(latest.current.value, latest));
+    const editor = view.current;
+    if (!editor) return;
+    editor.setState(createState(latest.current.value, latest));
+    // A new mission's code starts at the top, not where the last one was scrolled to.
+    editor.dispatch({ effects: EditorView.scrollIntoView(0, { y: "start" }) });
   }, [props.docKey]);
 
   useEffect(() => {
