@@ -13,4 +13,5 @@ export const REGIONS: readonly Region[] = [
   { id: "act5", name: "The workshop" },
   { id: "act6", name: "The deep survey" },
   { id: "act7", name: "The exchange" },
+  { id: "act8", name: "The grid" },
 ];
