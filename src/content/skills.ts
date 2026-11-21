@@ -240,6 +240,18 @@ export const SKILLS = {
     name: "Tool-calling agents and guardrails",
     summary: "Validate tool schemas, run step-capped ReAct loops with repeat breakers, enforce permission sandboxes and injection delimiters, and evaluate agent suites.",
   },
+  "ip-routing": {
+    name: "IP addressing, CIDR, and routing",
+    summary: "Convert IPv4 addresses to 32-bit integers, match CIDR subnets, route packets with longest-prefix match, and track stateful NAT mappings.",
+  },
+  "transport-protocols": {
+    name: "DNS and transport protocols",
+    summary: "Encode RFC 1035 DNS names, cache records with TTLs, compute Internet checksums, reassemble out-of-order TCP streams, and model AIMD congestion windows.",
+  },
+  "traffic-engineering": {
+    name: "Load balancing and resilience",
+    summary: "Shape traffic with token buckets, balance across healthy nodes with smooth weighted round-robin, isolate faults with circuit breakers, and schedule backoff retries.",
+  },
 } as const;
 
 export type SkillId = keyof typeof SKILLS;
