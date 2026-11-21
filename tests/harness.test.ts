@@ -252,3 +252,10 @@ expect_grid("scan", lambda: get("scan")(grid), "acbd", grid, budget=3)
   });
   expect(result.events[1]).toMatchObject({ kind: "work", data: { unit: "cell reads", looks: 4, budget: 3 } });
 });
+
+test("non-finite floats like inf and nan serialize to valid JSON", () => {
+  const result = run("def broken():\n    return float('inf')\n", 'expect("broken()", lambda: get("broken")(), 0)');
+  expect(result.error).toBeNull();
+  expect(result.checks[0].passed).toBe(false);
+  expect(result.events[0].data.got).toBe("inf");
+});

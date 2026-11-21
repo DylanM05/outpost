@@ -112,6 +112,30 @@ export const SKILLS = {
     name: "Testing",
     summary: "Write and run tests with pytest, test for errors, and let failing tests point to bugs.",
   },
+  functional: {
+    name: "Functional tools",
+    summary: "Pass functions as values, write lambdas and comprehensions, avoid hidden mutations, and capture state in closures.",
+  },
+  "linear-structures": {
+    name: "Stacks, queues, and linked lists",
+    summary: "Build stacks, queues, and linked lists from scratch, and pick the structure whose ends fit the work.",
+  },
+  trees: {
+    name: "Trees and tries",
+    summary: "Build and traverse binary search trees and prefix tries for ordered lookups and prefix search.",
+  },
+  heaps: {
+    name: "Heaps and priority queues",
+    summary: "Build a binary min-heap and use heapq to pull the highest-priority item in logarithmic time.",
+  },
+  "shortest-paths": {
+    name: "Weighted graphs and shortest paths",
+    summary: "Represent networks with adjacency lists, traverse them with DFS, and find lowest-cost routes with Dijkstra's algorithm.",
+  },
+  "dynamic-programming": {
+    name: "Dynamic programming",
+    summary: "Eliminate repeated work with memoization and tables, and recognize when exact search becomes intractable.",
+  },
 } as const;
 
 export type SkillId = keyof typeof SKILLS;
