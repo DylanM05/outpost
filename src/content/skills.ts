@@ -152,6 +152,26 @@ export const SKILLS = {
     name: "Authentication and authorization",
     summary: "Hash passwords with salt, issue and verify signed tokens, parse Bearer headers, and enforce ownership and role rules.",
   },
+  config: {
+    name: "Configuration and secrets",
+    summary: "Load and validate configuration from environment variables, fail fast on missing secrets, and scrub sensitive fields from logs.",
+  },
+  containers: {
+    name: "Containers and deployment",
+    summary: "Structure Dockerfiles for layer caching and non-root execution, validate service topologies, and expose health and readiness probes.",
+  },
+  observability: {
+    name: "Logs, metrics, and CI",
+    summary: "Emit structured JSON logs with request IDs, compute error rates and latency percentiles, and run dependency-ordered CI pipelines.",
+  },
+  security: {
+    name: "Web security basics",
+    summary: "Prevent path traversal, XSS, unsafe CORS, and brute-force abuse with strict validation, security headers, and rate limiting.",
+  },
+  reliability: {
+    name: "Backups and incident response",
+    summary: "Apply transactional database migrations, verify checksummed backups, and diagnose and repair production outages from telemetry.",
+  },
 } as const;
 
 export type SkillId = keyof typeof SKILLS;
