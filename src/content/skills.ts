@@ -70,7 +70,7 @@ export const SKILLS = {
   },
   "git-history": {
     name: "Reading history",
-    summary: "Read a repository's history with log, name commits by their hashes, and look inside commits, trees, and blobs.",
+    summary: "Read a repository's history with log, reflog, and bisect, name commits by their hashes, and look inside commits, trees, and blobs.",
   },
   "git-config": {
     name: "Configuring Git",
@@ -78,15 +78,15 @@ export const SKILLS = {
   },
   branches: {
     name: "Branches",
-    summary: "Create and switch branches, and bring work back together with merge and rebase.",
+    summary: "Create and switch branches, resolve merge and rebase conflicts, cherry-pick, squash, and work across worktrees.",
   },
   undoing: {
     name: "Undoing changes",
-    summary: "Discard, unstage, and uncommit work with restore and reset, knowing what each one throws away.",
+    summary: "Discard, unstage, stash, revert, reset, and recover work via reflog, knowing which operations are safe on shared history.",
   },
   remotes: {
     name: "Remotes",
-    summary: "Connect repositories, fetch, pull, and push, and share work through a shared repository.",
+    summary: "Connect repositories, fetch, pull, push branches and release tags, and share work through a shared repository.",
   },
   classes: {
     name: "Classes",
