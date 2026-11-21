@@ -17,10 +17,11 @@ interface Props {
   mission: Mission;
   energized: string | null;
   run: RunRecord | null;
+  unlockAll?: boolean;
   onOpen(missionId: string): void;
 }
 
-export function Plant({ missions, systems, region, save, mission, energized, run, onOpen }: Props) {
+export function Plant({ missions, systems, region, save, mission, energized, run, unlockAll = false, onOpen }: Props) {
   const events = run?.outcome.kind === "finished" ? run.outcome.result.events : [];
   const hasLiveScene =
     mission.scene === "drone" ||
@@ -54,6 +55,7 @@ export function Plant({ missions, systems, region, save, mission, energized, run
       title={region.name}
       currentSystem={mission.system}
       energized={energized}
+      unlockAll={unlockAll}
       onOpen={onOpen}
     />
   );

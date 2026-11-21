@@ -3144,3 +3144,60 @@ button.confidence-pill.active {
     width: auto;
   }
 }
+
+
+/* Debug / Explorer Control Strip */
+
+.debug-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  padding: 7px 20px;
+  border-bottom: 1.5px solid var(--ink);
+  border-left: 5px solid var(--signal);
+  background: var(--panel-sunken);
+  font-size: 14px;
+}
+
+.debug-badge {
+  padding: 2px 7px;
+  border: 1px solid var(--signal-ink);
+  border-radius: 3px;
+  background: var(--signal);
+  color: var(--signal-ink);
+  font-family: var(--cond);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.debug-group {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.debug-bar button {
+  padding: 4px 10px;
+  font-size: 13px;
+}
+
+.debug-bar select {
+  padding: 4px 8px;
+  font-size: 13px;
+}
+
+.debug-exit {
+  margin-left: auto;
+}
+
+@media (max-width: 820px) {
+  .debug-bar {
+    padding: 8px 14px;
+  }
+
+  .debug-exit {
+    margin-left: 0;
+  }
+}

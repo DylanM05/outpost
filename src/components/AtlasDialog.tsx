@@ -12,11 +12,12 @@ interface Props {
   currentMissionId: string;
   missions: Mission[];
   save: SaveData;
+  unlockAll?: boolean;
   onClose(): void;
   onOpen(missionId: string): void;
 }
 
-function regionState(missions: Mission[], regionId: string, save: SaveData): {
+function regionState(missions: Mission[], regionId: string, save: SaveData, unlockAll: boolean): {
   state: SystemState;
   systemsOnline: number;
   systemsTotal: number;
@@ -26,9 +27,9 @@ function regionState(missions: Mission[], regionId: string, save: SaveData): {
 } {
   const systems = systemsIn(regionId);
   const inRegion = missions.filter((m) => m.region === regionId);
-  const systemsOnline = systems.filter((s) => systemProgress(missions, s, save).state === "online").length;
+  const systemsOnline = systems.filter((s) => systemProgress(missions, s, save, unlockAll).state === "online").length;
   const missionsDone = inRegion.filter((m) => isRestored(save, m.id)).length;
-  const entry = regionEntry(missions, regionId, save);
+  const entry = regionEntry(missions, regionId, save, unlockAll);
   const state: SystemState =
     systemsOnline === systems.length && systems.length > 0
       ? "online"
@@ -54,7 +55,7 @@ function kindBadge(mission: Mission): string | null {
   return null;
 }
 
-export function AtlasDialog({ open, currentRegion, currentMissionId, missions, save, onClose, onOpen }: Props) {
+export function AtlasDialog({ open, currentRegion, currentMissionId, missions, save, unlockAll = false, onClose, onOpen }: Props) {
   const dialog = useRef<HTMLDialogElement>(null);
   const searchInput = useRef<HTMLInputElement>(null);
   const [selectedRegion, setSelectedRegion] = useState(currentRegion);
@@ -78,9 +79,9 @@ export function AtlasDialog({ open, currentRegion, currentMissionId, missions, s
       REGIONS.map((region, index) => ({
         region,
         index,
-        ...regionState(missions, region.id, save),
+        ...regionState(missions, region.id, save, unlockAll),
       })),
-    [missions, save],
+    [missions, save, unlockAll],
   );
 
   const totalDone = useMemo(() => missions.filter((m) => isRestored(save, m.id)).length, [missions, save]);
@@ -108,14 +109,14 @@ export function AtlasDialog({ open, currentRegion, currentMissionId, missions, s
         matches.push({
           mission: m,
           index: i,
-          unlocked: isUnlocked(missions, save, i),
+          unlocked: isUnlocked(missions, save, i, unlockAll),
           done: isRestored(save, m.id),
         });
       }
       if (matches.length >= 60) break;
     }
     return matches;
-  }, [trimmed, missions, save]);
+  }, [trimmed, missions, save, unlockAll]);
 
   const activeEntry = regionStats.find((r) => r.region.id === selectedRegion) ?? regionStats[0];
   const activeSystems = systemsIn(activeEntry.region.id);
@@ -275,7 +276,7 @@ export function AtlasDialog({ open, currentRegion, currentMissionId, missions, s
 
             <ol className="atlas-systems">
               {activeSystems.map((system, idx) => {
-                const progress = systemProgress(missions, system, save);
+                const progress = systemProgress(missions, system, save, unlockAll);
                 return (
                   <li key={system.name} className={`atlas-system ${progress.state}`}>
                     <div className="atlas-system-head">
@@ -290,7 +291,7 @@ export function AtlasDialog({ open, currentRegion, currentMissionId, missions, s
                       {system.missions.map((mission) => {
                         const globalIdx = missions.indexOf(mission);
                         const done = isRestored(save, mission.id);
-                        const unlocked = isUnlocked(missions, save, globalIdx);
+                        const unlocked = isUnlocked(missions, save, globalIdx, unlockAll);
                         const current = mission.id === currentMissionId;
                         const badge = kindBadge(mission);
                         return (
