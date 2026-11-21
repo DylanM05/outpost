@@ -12,6 +12,7 @@
 export const HARNESS_PY = String.raw`
 import io
 import json
+import math
 import sys
 import tokenize
 import traceback
@@ -73,8 +74,10 @@ def _explain(exc):
 
 
 def _plain(value, depth=0):
-    if value is None or isinstance(value, (bool, int, float, str)):
+    if value is None or isinstance(value, (bool, int, str)):
         return value
+    if isinstance(value, float):
+        return value if math.isfinite(value) else repr(value)
     if depth > 4:
         return repr(value)
     if isinstance(value, (list, tuple)):

@@ -70,8 +70,15 @@ Kestrel Ridge was expanded first so the survey office doesn't introduce Python a
 - **Maintenance pools** for searching, sorting, and grid search. Lists by position, recursion, and hashing have theirs.
 - **Growth checks** that run a solution at n, 2n, and 4n and report the ratio: "doubling the input quadrupled the work, which is quadratic growth." Budgets cover this for now.
 
-## Algorithms II: the deep survey (sketch)
+## Algorithms II: the deep survey
 
-Linked lists and stacks (undo history for the terminal), queues (drone dispatch), binary search trees (an elevation index), heaps (repairs by priority), Dijkstra's algorithm (fuel-weighted routes), dynamic programming (the cheapest supply plan, then memoization), and the traveling-salesman problem as an introduction to problems where nobody knows a fast exact answer, and where good-enough heuristics come in.
+**Built:** 34 missions across eleven systems in `src/content/act6/`:
 
-Independent mission: an existing route planner times out on the full map. Make it fast enough without changing its answers.
+- **Signal filters & Memo desk** (practical functional programming from Boot.dev's *Learn Functional Programming*): first-class functions (predict), `lambda` and comprehensions, pure functions without hidden mutation, closures (predict), function factories & composition, and a `@memoize` decorator.
+- **Command stack & Dispatch line** (stacks, queues, linked lists): LIFO tracing (predict), `Stack` & `UndoLog`, balanced telemetry packets, linked `Node` traversal (predict), `O(1)` `LinkedQueue` with `head`/`tail` pointers, and sliding-window arrival counts with `deque` under a read budget.
+- **Pivot rack** (quicksort): Lomuto partitioning (predict), in-place `partition` (sorting bars), and in-place `quick_sort` with middle-pivot selection checked with comparison budgets on both shuffled and already-sorted 1,200-item inputs.
+- **Elevation tree & Callsign index** (BSTs & tries): pre-order vs in-order traversal (predict), `BSTNode` insert/exists/min/max, `inorder`/`range_query` with branch pruning/`height`, `delete` with in-order successor; trie structure (predict), `Trie` add/exists/starts_with, and prefix autocomplete + substring match scanning.
+- **Priority board** (heaps): min-heap bubble-up (predict), hand-built `MinHeap` under a comparison budget, and a `heapq` priority dispatch board replacing repeated re-sorting.
+- **Waystation network** (graphs, DFS, Dijkstra, guided build): adjacency-list DFS (predict), `Graph` reachability and cluster counting, Dijkstra's `cheapest_route` with `heapq`, and the guided **Fuel-aware planner** running Dijkstra over a weighted terrain grid on the grid scene.
+- **Supply ledger** (DP & P vs NP): exponential repeated subproblems (predict), top-down memoization (`count_climbs`), bottom-up tabulation (`min_canisters` where greedy fails), and exact TSP vs nearest-neighbor heuristic (`tour-the-beacons`).
+- **Deep survey core** (independent finale): optimize a slow three-part planner (`dispatch_queue`, `cheapest_leg`, `max_payload_value`) with `heapq`, Dijkstra, and 0/1 knapsack DP without changing its answers.
