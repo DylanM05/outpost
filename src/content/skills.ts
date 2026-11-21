@@ -264,6 +264,18 @@ export const SKILLS = {
     name: "ETL pipelines and anomaly detection",
     summary: "Coerce schemas with dead-letter routing, deduplicate CDC upserts, schedule minimal DAG backfills, and detect rolling Z-score anomalies.",
   },
+  "cpu-scheduling": {
+    name: "CPU scheduling and deadlock avoidance",
+    summary: "Schedule processes with Round-Robin, SRTF, and MLFQ, prevent priority inversion with inheritance, and check safe execution sequences with Banker's algorithm.",
+  },
+  "virtual-memory": {
+    name: "Virtual memory and paging",
+    summary: "Translate multi-level virtual addresses with permission checks, evict pages with the Clock algorithm, and isolate forked memory using Copy-on-Write.",
+  },
+  "os-filesystems": {
+    name: "Inode filesystems and allocators",
+    summary: "Allocate contiguous extents via disk bitmaps, separate directory links from reference-counted inodes, split and coalesce binary buddy blocks, and resolve symlinks safely.",
+  },
 } as const;
 
 export type SkillId = keyof typeof SKILLS;
