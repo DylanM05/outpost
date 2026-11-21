@@ -2,9 +2,11 @@ import { lazy, Suspense } from "react";
 import type { Mission, SupportLevel } from "../content/parse";
 import { comparePrediction } from "../game/predict";
 import { SUPPORT_LABEL, type SupportChoice } from "../game/rules";
+import type { Confidence } from "../game/save";
 import { passedAll, type RunResult } from "../python/harness";
 import type { RunnerStatus, RunOutcome } from "../python/runner";
 import { CodeEditor } from "./CodeEditor";
+import { ConfidencePicker } from "./ConfidencePicker";
 import { EasierStartOffer } from "./EasierStartOffer";
 import { ErrorBox, MOD_KEY, Output, RestoredBanner, RunProblem, Tests } from "./Results";
 
@@ -38,9 +40,16 @@ export interface BenchProps {
   onReset(): void;
   onExecute(mode: RunMode): void;
   onOpen(missionId: string): void;
+  confidence: Confidence | null;
+  onConfidence(confidence: Confidence | null): void;
   // Set after several failed submissions, when a more complete starter exists.
   easierStart: SupportLevel | null;
   onEasierStart(): void;
+}
+
+export function shouldShowConfidence(mission: Mission, support: SupportChoice, completed?: boolean): boolean {
+  if (completed) return false;
+  return support.level !== "guided" || Boolean(mission.reviewSkill) || mission.assessment || mission.kind === "predict";
 }
 
 export function Bench(props: BenchProps) {
@@ -92,6 +101,9 @@ function CodeBench(props: BenchProps) {
         <button className="submit" onClick={() => props.onExecute("submit")} disabled={busy !== null || props.completed}>
           Submit <kbd>{MOD_KEY}+Shift+Enter</kbd>
         </button>
+        {shouldShowConfidence(mission, props.support, props.completed) && (
+          <ConfidencePicker value={props.confidence} disabled={busy !== null} onChange={props.onConfidence} />
+        )}
         <RunnerNote status={props.runnerStatus} busy={busy} />
       </div>
 
@@ -157,6 +169,9 @@ function PredictBench(props: BenchProps) {
         <button className="submit" onClick={check} disabled={busy !== null || props.completed}>
           Check prediction <kbd>{MOD_KEY}+Enter</kbd>
         </button>
+        {shouldShowConfidence(mission, props.support, props.completed) && (
+          <ConfidencePicker value={props.confidence} disabled={busy !== null} onChange={props.onConfidence} />
+        )}
         <RunnerNote status={props.runnerStatus} busy={busy} />
       </div>
 

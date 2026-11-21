@@ -2,7 +2,8 @@ import { useEffect, useSyncExternalStore } from "react";
 import type { Mission } from "../content/parse";
 import { passedAll, type RunResult } from "../python/harness";
 import { relay, type RelayStatus } from "../relay/session";
-import type { BenchProps, RunMode } from "./Bench";
+import { shouldShowConfidence, type BenchProps, type RunMode } from "./Bench";
+import { ConfidencePicker } from "./ConfidencePicker";
 import { RelayTerminal } from "./RelayTerminal";
 import { MOD_KEY, RestoredBanner, RunProblem, Tests } from "./Results";
 
@@ -72,6 +73,9 @@ export function TerminalBench(props: BenchProps) {
         <button className="submit" onClick={submit} disabled={blocked}>
           Submit <kbd>{MOD_KEY}+Shift+Enter</kbd>
         </button>
+        {shouldShowConfidence(mission, props.support, props.completed) && (
+          <ConfidencePicker value={props.confidence} disabled={blocked} onChange={props.onConfidence} />
+        )}
       </div>
 
       <div className="results" aria-live="polite">

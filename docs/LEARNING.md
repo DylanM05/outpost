@@ -47,6 +47,12 @@ Heavy scaffolding helps beginners but slows down learners who are past it (the e
 
 The thresholds are guesses to tune in playtesting. A typo or one failed test never moves the level: it takes a whole mission's outcome.
 
+## Implemented: optional pre-submit confidence calibration
+
+On Standard, Challenge, predict, assessment, and maintenance submissions, players see an optional three-choice toggle (`Unsure`, `Fairly sure`, `Certain`) beside Submit. Leaving it unset never blocks submitting, and clicking an active option clears it.
+
+When a rating is chosen, the submission outcome (pass or fail) is recorded in `confidenceLog` alongside the rating. Once at least one rating exists, the Skills dialog displays a **Calibration** card showing pass rates per confidence level and a brief reflective note (for instance, flagging overconfidence when `Certain` submissions frequently fail, or underconfidence when `Unsure` submissions usually pass). Confidence is never used for unlocks, support changes, or skill evidence, and is framed strictly as a private self-check rather than a grade. Old saves without `confidenceLog` remain compatible.
+
 ## Skill evidence
 
 - **Practiced:** completed with guided support, hints, or a heavily retried maintenance attempt.
@@ -61,7 +67,7 @@ Campaign restoration never depends on waiting days for a review. The earlier pro
 
 1. Playtest the review loop and adaptive support, and expand review coverage based on observed gaps. Add variants before repeated exposure becomes answer memorization.
 2. Strengthen the read → modify → make progression. This release includes two maintenance tasks with existing code; the campaign still needs a deliberate modification stage for each major concept.
-3. Add optional confidence judgments before independent submissions, then compare confidence with later success. Avoid framing confidence as a grade.
+3. Evaluate pre-submit confidence calibration during playtests to ensure the optional toggle stays unobtrusive and helpful.
 4. Validate transfer before expanding into a local development environment.
 
 ## Playtest protocol

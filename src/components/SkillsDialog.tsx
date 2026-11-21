@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 import type { Mission } from "../content/parse";
 import type { SkillId } from "../content/skills";
+import { calibrationSummary } from "../game/confidence";
 import { isUnlocked, skillReport, skillSupport, SUPPORT_LABEL, type Evidence } from "../game/rules";
 import type { SaveData } from "../game/save";
 
@@ -39,6 +40,8 @@ export function SkillsDialog({ open, missions, reviews, save, onClose, onOpen }:
     if (!open && element.open) element.close();
   }, [open]);
 
+  const calibration = calibrationSummary(save.confidenceLog);
+
   return (
     <dialog ref={dialog} className="skills-dialog" onClose={onClose} aria-labelledby="skills-title">
       <div className="dialog-head">
@@ -53,6 +56,27 @@ export function SkillsDialog({ open, missions, reviews, save, onClose, onOpen }:
           Retained adds an independent maintenance success at least a week after earlier independent evidence.
           Guided work and hints count as practice. Retention is evidence of a past success, not a guarantee that you will never forget.
         </p>
+        {calibration.total > 0 && (
+          <section className="calibration" aria-labelledby="calibration-title">
+            <div className="calibration-head">
+              <h3 id="calibration-title">Calibration</h3>
+              <span className="note">Optional self-check, never a grade</span>
+            </div>
+            <ul className="calibration-grid">
+              {calibration.buckets.map((bucket) => (
+                <li key={bucket.level} className="calibration-bucket">
+                  <span className="calibration-label">{bucket.label}</span>
+                  <span className="calibration-stat">
+                    {bucket.total === 0
+                      ? "No ratings yet"
+                      : `${bucket.passed} of ${bucket.total} passed (${Math.round((bucket.rate ?? 0) * 100)}%)`}
+                  </span>
+                </li>
+              ))}
+            </ul>
+            {calibration.note && <p className="note">{calibration.note}</p>}
+          </section>
+        )}
         <ul className="skill-list">
           {skillReport([...missions, ...reviews], save).map((skill) => (
             <li key={skill.id} className={`skill ${skill.evidence}`}>

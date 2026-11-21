@@ -815,6 +815,46 @@ button.submit:hover:not(:disabled) {
   color: var(--fault);
 }
 
+.confidence-picker {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+}
+
+.confidence-label {
+  color: var(--ink-soft);
+  font-size: 13px;
+}
+
+.confidence-pills {
+  display: inline-flex;
+  gap: 4px;
+}
+
+button.confidence-pill {
+  padding: 4px 9px;
+  border: 1px solid var(--rule);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--ink-soft);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+button.confidence-pill:hover:not(:disabled) {
+  border-color: var(--ink-soft);
+  color: var(--ink);
+}
+
+button.confidence-pill.active {
+  border-color: var(--signal-ink);
+  background: var(--panel-raised);
+  color: var(--ink);
+  font-weight: 600;
+}
+
 .results {
   display: grid;
   gap: 18px;
@@ -1574,6 +1614,62 @@ button.submit:hover:not(:disabled) {
 .dialog-intro {
   margin: 0 0 18px;
   color: var(--ink-soft);
+}
+
+.calibration {
+  margin: 0 0 20px;
+  padding: 12px 14px;
+  border: 1px solid var(--rule);
+  border-radius: 6px;
+  background: var(--panel);
+}
+
+.calibration-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.calibration-head h3 {
+  margin: 0;
+  font-family: var(--cond);
+  font-size: 17px;
+}
+
+.calibration-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.calibration-bucket {
+  display: grid;
+  gap: 2px;
+  padding: 8px 10px;
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+  background: var(--panel-raised);
+}
+
+.calibration-label {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.calibration-stat {
+  color: var(--ink-soft);
+  font-size: 13px;
+}
+
+.calibration .note {
+  margin: 10px 0 0;
+  font-size: 13px;
 }
 
 .skill-list {
