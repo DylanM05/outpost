@@ -54,14 +54,14 @@ Learners still need to work on their own computers eventually. A later chapter c
 
 ## Learning loop now implemented
 
-Act I has 39 campaign missions, Act II 29, Act III 43, Act IV 44, Act V 35, Act VI 34, Act VII 31, Act VIII 20, and Act IX 8 (283 campaign missions total across all nine acts), plus 21 maintenance calls: three variants each for functions, decisions, loops, lists, dictionaries, recursion, and hashing. Calls are scheduled after gaps, rotate tasks, and add retention evidence without blocking campaign progress.
+Act I has 39 campaign missions, Act II 29, Act III 43, Act IV 44, Act V 35, Act VI 34, Act VII 31, Act VIII 20, and Act IX 8 (283 campaign missions total across all nine acts), plus 57 maintenance calls: three variants each across 19 skills (functions, decisions, loops, lists, dictionaries, recursion, hashing, searching, sorting, grid search, classes, inheritance, polymorphism, functional tools, stacks/queues/linked lists, trees/tries, heaps, shortest paths, and SQL). Calls are scheduled after gaps, rotate tasks, and add retention evidence without blocking campaign progress.
 
 Support adapts per skill: onboarding sets the starting level, a clean solve gives the next mission for that skill less scaffolding, and a struggle gives it more. Stuck players are offered a more complete starting point. Existing saves remain compatible. See [LEARNING.md](LEARNING.md) for the exact rules and their limitations.
 
 ## Next steps
 
 1. **Playtest the learning loop** with three to five beginners, including an unfamiliar problem about a week later. Use the result to revise the content, the schedule, and the support thresholds.
-2. **Finish the maintenance pools.** Lists, recursion, and hashing have them. Searching, sorting, grid search, and the skills from Acts III–IX don't yet.
+2. **Finish the maintenance pools.** Acts I, II, V, VI, and SQL now have 3-variant maintenance pools (57 calls across 19 skills). Terminal skills (Acts III–IV), HTTP/API/auth (Act VII), deployment/security (Act VIII), and architecture/pub-sub (Act IX) don't yet.
 4. **Add deliberate modification missions** between reading code and creating programs. Two maintenance variants already ask players to change existing code.
 5. **Measure confidence against performance** through optional pre-submit confidence judgments.
 6. **Extend maintenance coverage** to the remaining skills, with varied tasks that assess transfer instead of answer recall.
