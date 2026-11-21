@@ -28,6 +28,8 @@ Boot.dev's Backend path is 17 courses and 8 projects, about 540 hours in their c
 
 - **Your own outpost brings the backend path home** (folding in Boot.dev's *Learn Pub/Sub Architecture* and capstone engineering): MVP scoping with transitive dependencies, wildcard topic pub/sub with per-subscriber idempotency and dead-letter queues, bounded work queues with backpressure and replay, critical review of AI-generated code, API contract drift auditing, a full capstone alert broker built from a spec, and a backward-compatible production change request — 8 missions across four systems.
 
+- **The cipher room follows Boot.dev's Learn Cryptography**: UTF-8 bytes/hex/Base64, XOR and Hamming distance, Caesar brute force, one-time pads and two-time-pad attacks, counter-mode stream ciphers and bit-flipping malleability, salted iterated key derivation, PKCS#7 padding, ECB leak detection and CBC chaining, SHA-256 avalanche and proof-of-work, Merkle roots and inclusion proofs, Diffie-Hellman key exchange, RSA key generation and signatures, Encrypt-then-MAC authenticated channels, versioned key rotation, and an independent radio-cipher hardening finale — 21 missions across seven systems.
+
 These notes cover structure and pacing only. Outpost's lessons and missions are its own.
 
 ## The acts
@@ -45,6 +47,7 @@ Each act is a region of the world, with a guided build in the middle and an inde
 | VII | The exchange | HTTP, JSON, SQL, building an API, authentication, webhooks | Supply exchange API with a database | Connect two settlements' services *(built: 31 missions)* |
 | VIII | The grid | Deployment, containers, configuration, logs, CI, security basics, backups | Deploy and monitor the exchange | Diagnose and fix a production outage *(built: 20 missions)* |
 | IX | Your own outpost | Planning, scoping, pub/sub architecture, documentation, reviewing AI code responsibly | — | A capstone you design and build, followed by a change request *(built: 8 missions)* |
+| X | The cipher room | Bytes/hex/Base64, XOR, OTP & two-time pads, stream ciphers, KDFs, PKCS#7, ECB/CBC, SHA-256, Merkle trees, Diffie-Hellman, RSA, Encrypt-then-MAC, key rotation | Authenticated radio channel & key rotation | Audit and rebuild a hardened radio cipher *(built: 21 missions)* |
 
 The algorithms regions are planned in detail in [ALGORITHMS.md](ALGORITHMS.md). Algorithms I comes second because it builds directly on Act I and runs in the browser on the existing engine. Boot.dev moves learners to a local setup straight after Python, so swapping Acts II and III is the alternative if getting off the browser early matters more.
 
@@ -54,7 +57,7 @@ Learners still need to work on their own computers eventually. A later chapter c
 
 ## Learning loop now implemented
 
-Act I has 39 campaign missions, Act II 29, Act III 43, Act IV 56, Act V 35, Act VI 34, Act VII 31, Act VIII 20, and Act IX 8 (295 campaign missions total across all nine acts), plus 90 maintenance calls: three variants each across 30 skills spanning Acts I, II, and V–IX (functions, decisions, loops, lists, dictionaries, recursion, hashing, searching, sorting, grid search, classes, encapsulation, inheritance, polymorphism, functional tools, stacks/queues/linked lists, trees/tries, heaps, shortest paths, dynamic programming, HTTP, SQL, API design, auth, configuration, containers, observability, web security, reliability, and architecture). Calls are scheduled after gaps, rotate tasks, and add retention evidence without blocking campaign progress.
+Act I has 39 campaign missions, Act II 29, Act III 43, Act IV 56, Act V 35, Act VI 34, Act VII 31, Act VIII 20, Act IX 8, and Act X 21 (316 campaign missions total across ten acts), plus 90 maintenance calls: three variants each across 30 skills spanning Acts I, II, and V–IX (functions, decisions, loops, lists, dictionaries, recursion, hashing, searching, sorting, grid search, classes, encapsulation, inheritance, polymorphism, functional tools, stacks/queues/linked lists, trees/tries, heaps, shortest paths, dynamic programming, HTTP, SQL, API design, auth, configuration, containers, observability, web security, reliability, and architecture). Calls are scheduled after gaps, rotate tasks, and add retention evidence without blocking campaign progress.
 
 Support adapts per skill: onboarding sets the starting level, a clean solve gives the next mission for that skill less scaffolding, and a struggle gives it more. Stuck players are offered a more complete starting point. Optional pre-submit confidence ratings (`Unsure` / `Fairly sure` / `Certain`) on Standard, Challenge, predict, and maintenance submissions feed a private Calibration panel in Skills without ever acting as a grade. Existing saves remain compatible. See [LEARNING.md](LEARNING.md) for the exact rules and their limitations.
 
