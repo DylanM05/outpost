@@ -22,6 +22,8 @@ Boot.dev's Backend path is 17 courses and 8 projects, about 540 hours in their c
 
 - **The deep survey follows Learn Functional Programming's practical tools and Learn Data Structures & Algorithms (parts I & II)**: first-class functions, `lambda`, comprehensions, pure functions, closures, and memoization decorators; then stacks, queues, linked lists, in-place quicksort with middle-pivot partitioning, binary search trees (insert, search, range queries, delete), prefix tries, binary min-heaps and `heapq`, adjacency-list graphs and DFS, Dijkstra's weighted shortest paths (including a guided fuel-aware grid planner), top-down and bottom-up dynamic programming, and P vs NP / TSP heuristics — 34 missions across eleven systems in the browser, ending with an independent optimization mission.
 
+- **The exchange follows Learn HTTP Clients, Learn SQL, and Learn HTTP Servers**: JSON parsing and validation, URL dissection, HTTP headers/status codes/pagination/retries; real in-browser SQLite 3 tables, constraints, parameterized CRUD (with SQL injection contrast), `GROUP BY`/`HAVING`, subqueries, normalization and foreign keys, `INNER`/`LEFT` joins, indexes (`EXPLAIN QUERY PLAN`), and atomic transactions; HTTP routing, JSON validation, salted HMAC-SHA256 password hashing, HMAC-signed Bearer tokens, `401` vs `403` authorization, signed idempotent webhooks, and `ETag`/`304` caching — 31 missions across eleven systems, with a guided Supply Exchange API and an independent settlement-bridge finale.
+
 These notes cover structure and pacing only. Outpost's lessons and missions are its own.
 
 ## The acts
@@ -36,7 +38,7 @@ Each act is a region of the world, with a guided build in the middle and an inde
 | IV | The archive | Git: repositories, commits, history, branches, merging, rebasing, undoing, remotes, ignoring files | Version `logscan` and ship a change through the archive | Recover the archive from a repository's history *(built: 44 missions)* |
 | V | The workshop | Clean code, classes, encapsulation, abstraction, inheritance, polymorphism, special methods, modules, testing with pytest | Fleet control for the drones | Extend fleet control and its tests *(built: 35 missions)* |
 | VI | The deep survey | Functional tools, stacks, queues, linked lists, quicksort, BSTs, tries, heaps, graphs/DFS, Dijkstra's shortest paths, dynamic programming, P vs NP | Fuel-aware route planner | Make a slow planner fast enough without changing its answers *(built: 34 missions)* |
-| VII | The exchange | HTTP, JSON, SQL, building an API, authentication | Supply exchange API with a database | Connect two settlements' services |
+| VII | The exchange | HTTP, JSON, SQL, building an API, authentication, webhooks | Supply exchange API with a database | Connect two settlements' services *(built: 31 missions)* |
 | VIII | The grid | Deployment, containers, configuration, logs, CI, security basics, backups | Deploy and monitor the exchange | Diagnose and fix a production outage |
 | IX | Your own outpost | Planning, scoping, documentation, using AI tools responsibly | — | A capstone you design and build, followed by a change request |
 
@@ -48,14 +50,14 @@ Learners still need to work on their own computers eventually. A later chapter c
 
 ## Learning loop now implemented
 
-Act I has 39 campaign missions, Act II 29, Act III 43, Act IV 44, Act V 35, and Act VI 34, plus 21 maintenance calls: three variants each for functions, decisions, loops, lists, dictionaries, recursion, and hashing. Calls are scheduled after gaps, rotate tasks, and add retention evidence without blocking campaign progress.
+Act I has 39 campaign missions, Act II 29, Act III 43, Act IV 44, Act V 35, Act VI 34, and Act VII 31, plus 21 maintenance calls: three variants each for functions, decisions, loops, lists, dictionaries, recursion, and hashing. Calls are scheduled after gaps, rotate tasks, and add retention evidence without blocking campaign progress.
 
 Support adapts per skill: onboarding sets the starting level, a clean solve gives the next mission for that skill less scaffolding, and a struggle gives it more. Stuck players are offered a more complete starting point. Existing saves remain compatible. See [LEARNING.md](LEARNING.md) for the exact rules and their limitations.
 
 ## Next steps
 
 1. **Playtest the learning loop** with three to five beginners, including an unfamiliar problem about a week later. Use the result to revise the content, the schedule, and the support thresholds.
-2. **Build the exchange (Act VII)**: HTTP, JSON, SQL, building an API, and authentication on the relay machine (following Boot.dev's HTTP Clients, SQL, and HTTP Servers progression), with a guided supply exchange API and an independent finale connecting two settlements' services.
+2. **Build the grid (Act VIII)**: deployment, containers (`Dockerfile` / `compose`), configuration & secrets, structured logs, CI pipelines, web security basics, and database backups/recovery — following Boot.dev's Learn Docker, Learn CI/CD, and Learn Web Security progression — ending with diagnosing and fixing a production outage.
 3. **Finish the maintenance pools.** Lists, recursion, and hashing have them. Searching, sorting, and grid search don't yet, and neither does any skill from the relay line on: terminal missions can be maintenance calls, but none are written.
 4. **Add deliberate modification missions** between reading code and creating programs. Two maintenance variants already ask players to change existing code.
 5. **Measure confidence against performance** through optional pre-submit confidence judgments.

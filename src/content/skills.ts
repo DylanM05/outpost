@@ -136,6 +136,22 @@ export const SKILLS = {
     name: "Dynamic programming",
     summary: "Eliminate repeated work with memoization and tables, and recognize when exact search becomes intractable.",
   },
+  http: {
+    name: "HTTP and JSON",
+    summary: "Parse and serialize JSON, dissect URLs and query strings, work with HTTP methods, headers, and status codes, and handle pagination and retries.",
+  },
+  sql: {
+    name: "SQL and databases",
+    summary: "Design relational tables with constraints, write parameterized CRUD, aggregation, and join queries, index lookups, and keep updates atomic with transactions.",
+  },
+  "api-design": {
+    name: "Building APIs",
+    summary: "Route HTTP requests to handlers, validate JSON bodies, return accurate status codes, connect endpoints to SQLite storage, and verify webhooks.",
+  },
+  auth: {
+    name: "Authentication and authorization",
+    summary: "Hash passwords with salt, issue and verify signed tokens, parse Bearer headers, and enforce ownership and role rules.",
+  },
 } as const;
 
 export type SkillId = keyof typeof SKILLS;
