@@ -14,7 +14,7 @@ The intervals and thresholds below are product hypotheses to test with learners.
 
 ## Implemented: maintenance calls
 
-Kestrel Ridge has 39 campaign missions, the survey office 29, the relay line 43, the archive 44, the workshop 35, the deep survey 34, the exchange 31, and the grid 20. Twenty-one maintenance tasks provide three variants each for functions, decisions, loops, lists (working by position), dictionaries, recursion, and hashing. Other skill areas, including searching, sorting, grid search, and every skill from the relay line on, do not yet have review pools. A prerequisite mission unlocks each pool so calls do not require concepts the player has not encountered.
+Kestrel Ridge has 39 campaign missions, the survey office 29, the relay line 43, the archive 44, the workshop 35, the deep survey 34, the exchange 31, the grid 20, and your own outpost 8. Twenty-one maintenance tasks provide three variants each for functions, decisions, loops, lists (working by position), dictionaries, recursion, and hashing. Other skill areas, including searching, sorting, grid search, and every skill from the relay line on, do not yet have review pools. A prerequisite mission unlocks each pool so calls do not require concepts the player has not encountered.
 
 The first call becomes due one day after the prerequisite's first completion. Old saves use their original completion timestamps. Passing the capstone can unlock calls through restored prerequisites, but those automatic restorations do not themselves count as skill evidence.
 
