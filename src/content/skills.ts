@@ -172,6 +172,10 @@ export const SKILLS = {
     name: "Backups and incident response",
     summary: "Apply transactional database migrations, verify checksummed backups, and diagnose and repair production outages from telemetry.",
   },
+  architecture: {
+    name: "Planning, architecture, and pub/sub",
+    summary: "Scope features against constraints, design event-driven pub/sub brokers with dead-letter queues, review generated code critically, and evolve live systems without breaking contracts.",
+  },
 } as const;
 
 export type SkillId = keyof typeof SKILLS;
