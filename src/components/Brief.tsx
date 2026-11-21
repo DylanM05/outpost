@@ -1,6 +1,7 @@
 import type { Dispatch } from "react";
 import { allMissions } from "../content";
 import type { Mission, System } from "../content/parse";
+import { regionMeta } from "../content/regions";
 import { SKILLS } from "../content/skills";
 import {
   canSkipAhead,
@@ -27,6 +28,7 @@ interface Props {
   assessment: Mission | undefined;
   dispatch: Dispatch<Action>;
   onOpen(missionId: string): void;
+  onOpenAtlas(): void;
   onReplay(): void;
 }
 
@@ -39,7 +41,18 @@ function adaptation({ level, step }: SupportChoice): string | null {
     : `${from} took a few tries, so this mission gives you more to start from: ${SUPPORT_LABEL[level]} support.`;
 }
 
-export function Brief({ mission, missions, system, save, support: choice, assessment, dispatch, onOpen, onReplay }: Props) {
+export function Brief({
+  mission,
+  missions,
+  system,
+  save,
+  support: choice,
+  assessment,
+  dispatch,
+  onOpen,
+  onOpenAtlas,
+  onReplay,
+}: Props) {
   if (mission.reviewSkill) return <MaintenanceBrief mission={mission} save={save} dispatch={dispatch} onOpen={onOpen} missions={missions} />;
   const support = choice.level;
   const restored = isRestored(save, mission.id);
@@ -52,8 +65,30 @@ export function Brief({ mission, missions, system, save, support: choice, assess
   const offerEasier = easierStart(mission, save, choice);
   const lessonOpen = lessonStartsOpen(mission, save, support);
 
+  const region = regionMeta(mission.region);
+  const regionMissions = missions.filter((m) => m.region === mission.region);
+  const positionInRegion = regionMissions.indexOf(mission) + 1;
+  const globalIndex = missions.indexOf(mission);
+  const prevMission = globalIndex > 0 && isUnlocked(missions, save, globalIndex - 1) ? missions[globalIndex - 1] : null;
+  const nextStep =
+    globalIndex >= 0 && globalIndex + 1 < missions.length && isUnlocked(missions, save, globalIndex + 1)
+      ? missions[globalIndex + 1]
+      : null;
+
   return (
     <section className="brief" aria-labelledby="mission-title">
+      <div className="brief-context">
+        <button className="brief-region-link" onClick={onOpenAtlas}>
+          <span className="act-plate">{region.act}</span>
+          <span>{region.name}</span>
+        </button>
+        {positionInRegion > 0 && (
+          <span className="brief-step-count">
+            Mission {positionInRegion} of {regionMissions.length}
+          </span>
+        )}
+      </div>
+
       <h1 id="mission-title">{mission.title}</h1>
       <p className="system-state">
         <span className={`dot ${progress.state}`} aria-hidden="true" />
@@ -166,6 +201,25 @@ export function Brief({ mission, missions, system, save, support: choice, assess
               : "Hints are always fine to use. Solving this without them demonstrates the skill."}
         </p>
       </section>
+
+      {(prevMission || nextStep) && (
+        <nav className="mission-pager" aria-label="Adjacent missions">
+          {prevMission ? (
+            <button className="pager-btn prev" onClick={() => onOpen(prevMission.id)}>
+              <span className="pager-dir">Previous</span>
+              <span className="pager-title">{prevMission.title}</span>
+            </button>
+          ) : (
+            <span />
+          )}
+          {nextStep && (
+            <button className="pager-btn next" onClick={() => onOpen(nextStep.id)}>
+              <span className="pager-dir">Next</span>
+              <span className="pager-title">{nextStep.title}</span>
+            </button>
+          )}
+        </nav>
+      )}
     </section>
   );
 }

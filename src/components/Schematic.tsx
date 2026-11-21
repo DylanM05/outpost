@@ -7,7 +7,6 @@ import type { SaveData } from "../game/save";
 // in order, with a pip under each lamp for every repair it needs. A wire goes
 // live when the system it feeds is fully online.
 
-const COLUMN_GAP = 128;
 const TOP = 58;
 
 // Narrow containers get three lamps per row instead of five, so the plates
@@ -15,15 +14,16 @@ const TOP = 58;
 const perRowFor = (width: number) => (width < 520 ? 3 : 5);
 
 function layout(perRow: number) {
+  const columnGap = perRow === 3 ? 138 : 128;
   const rowGap = perRow === 3 ? 118 : 132;
   return {
-    width: perRow * COLUMN_GAP,
+    width: perRow * columnGap,
     rowGap,
     position(index: number) {
       const row = Math.floor(index / perRow);
       const column = index % perRow;
       const fromLeft = row % 2 === 0 ? column : perRow - 1 - column;
-      return { x: COLUMN_GAP / 2 + fromLeft * COLUMN_GAP, y: TOP + row * rowGap };
+      return { x: columnGap / 2 + fromLeft * columnGap, y: TOP + row * rowGap };
     },
   };
 }
@@ -56,13 +56,15 @@ interface Props {
   missions: Mission[];
   systems: System[];
   save: SaveData;
+  act?: string;
+  title?: string;
   currentSystem?: string;
   // The system that came fully online most recently; its wire and lamp animate once.
   energized?: string | null;
   onOpen?: (missionId: string) => void;
 }
 
-export function Schematic({ missions, systems, save, currentSystem, energized, onOpen }: Props) {
+export function Schematic({ missions, systems, save, act, title, currentSystem, energized, onOpen }: Props) {
   const figure = useRef<HTMLElement>(null);
   const [perRow, setPerRow] = useState(5);
 
@@ -79,6 +81,7 @@ export function Schematic({ missions, systems, save, currentSystem, energized, o
   const rows = Math.ceil(systems.length / perRow);
   const height = TOP + (rows - 1) * rowGap + 76;
   const first = position(0);
+  const onlineCount = systems.filter((s) => systemProgress(missions, s, save).state === "online").length;
 
   // Each wire feeds the system at its end: mains feeds the first, then each
   // system feeds the next.
@@ -97,6 +100,17 @@ export function Schematic({ missions, systems, save, currentSystem, energized, o
 
   return (
     <figure className="mimic" ref={figure}>
+      {title && (
+        <div className="mimic-head">
+          <span className="mimic-title-group">
+            {act && <span className="act-plate">{act}</span>}
+            <span className="mimic-title">{title}</span>
+          </span>
+          <span className="mimic-count">
+            {onlineCount} of {systems.length} online
+          </span>
+        </div>
+      )}
       <svg viewBox={`0 0 ${width} ${height}`} role="group" aria-label="Outpost schematic">
         {wires.map(({ system, from, to }) => {
           const live = systemProgress(missions, system, save).state === "online";
