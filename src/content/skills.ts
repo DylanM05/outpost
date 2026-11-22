@@ -176,6 +176,18 @@ export const SKILLS = {
     name: "Planning, architecture, and pub/sub",
     summary: "Scope features against constraints, design event-driven pub/sub brokers with dead-letter queues, review generated code critically, and evolve live systems without breaking contracts.",
   },
+  encoding: {
+    name: "Bytes and encoding",
+    summary: "Convert between text, raw bytes, binary, hex, and Base64, and combine byte streams with bitwise XOR and Hamming distance.",
+  },
+  "symmetric-crypto": {
+    name: "Symmetric cryptography",
+    summary: "Encrypt and decrypt with XOR, stream ciphers, key derivation, PKCS#7 padding, and CBC mode while avoiding nonce reuse and ECB leaks.",
+  },
+  "asymmetric-crypto": {
+    name: "Hashing, key exchange, and AEAD",
+    summary: "Use cryptographic hashes, Merkle trees, Diffie-Hellman key exchange, RSA modular math, Encrypt-then-MAC channels, and key rotation.",
+  },
 } as const;
 
 export type SkillId = keyof typeof SKILLS;
