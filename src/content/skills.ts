@@ -208,6 +208,18 @@ export const SKILLS = {
     name: "Distributed systems",
     summary: "Route traffic with consistent hashing, coordinate leader leases with fencing tokens, enforce quorum reads/writes, compare vector clocks, and compact commit logs.",
   },
+  "memory-management": {
+    name: "Memory and garbage collection",
+    summary: "Manage heap memory with bump arenas and coalescing free lists, track reference counts, spot cycles, and reclaim unreachable objects with mark-and-sweep and copying GC.",
+  },
+  parsing: {
+    name: "Lexers, parsers, and ASTs",
+    summary: "Tokenize source text, parse operator precedence and blocks into ASTs with recursive descent, and evaluate lexical scopes and closures.",
+  },
+  "bytecode-vm": {
+    name: "Compilers and virtual machines",
+    summary: "Fold constants, compile ASTs with jump backpatching into flat stack bytecode, and execute programs on a stack-based virtual machine.",
+  },
 } as const;
 
 export type SkillId = keyof typeof SKILLS;
