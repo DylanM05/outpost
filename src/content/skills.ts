@@ -348,6 +348,18 @@ export const SKILLS = {
     name: "GraphQL execution and DataLoader",
     summary: "Parse nested GraphQL selection sets, resolve fields with depth limits and partial errors, and eliminate N+1 queries with DataLoader batching.",
   },
+  "js-fundamentals": {
+    name: "JavaScript fundamentals and arrays",
+    summary: "Master JavaScript strict equality, let/const scoping, template literals, destructuring, spread immutability, and map/filter/reduce pipelines.",
+  },
+  "js-closures-classes": {
+    name: "JavaScript closures, classes, and patterns",
+    summary: "Build stateful closure factories, ES6 classes with private state, throttling and memoization wrappers, and immutable deep-merge helpers.",
+  },
+  "js-async": {
+    name: "JavaScript event loop and async/await",
+    summary: "Trace microtask vs. macrotask scheduling, compose Promises with async/await and retries, and bound async concurrency pools.",
+  },
 } as const;
 
 export type SkillId = keyof typeof SKILLS;
