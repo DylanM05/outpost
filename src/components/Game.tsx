@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type Dispatch } from "react";
 import { allMissions, missions, regionOf, reviewMissions, systemOf, systemsIn } from "../content";
-import { regionMeta } from "../content/regions";
+import { REGIONS, regionMeta } from "../content/regions";
 import { SUPPORT_LEVELS, type SupportLevel } from "../content/parse";
 import { comparePrediction } from "../game/predict";
 import {
@@ -179,7 +179,7 @@ export function Game({ save, profile, dispatch }: Props) {
             className="region-switcher"
             data-tour="region-switcher"
             onClick={() => setAtlasOpen(true)}
-            title="Open the Station Atlas to browse all 14 acts or search missions"
+            title={`Open the Station Atlas to browse all ${REGIONS.length} acts or search missions`}
             aria-haspopup="dialog"
             aria-label={`Open station atlas. Currently in ${currentRegionMeta.act}, ${currentRegionMeta.name}, ${online} of ${regionSystems.length} systems online.`}
           >

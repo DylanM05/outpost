@@ -1,4 +1,6 @@
 import { useEffect, useLayoutEffect, useState } from "react";
+import { missions } from "../content";
+import { REGIONS } from "../content/regions";
 import { MOD_KEY } from "./Results";
 
 const TOUR_KEY = "outpost.tour.v1";
@@ -57,7 +59,7 @@ export const TOUR_STEPS: readonly TourStep[] = [
     id: "atlas",
     target: "region-switcher",
     title: "Switch acts or search with the Station Atlas",
-    body: `Click the region plate here—or press ${MOD_KEY}+K from anywhere—to open the Station Atlas across all 14 acts and 384 missions.`,
+    body: `Click the region plate here—or press ${MOD_KEY}+K from anywhere—to open the Station Atlas across all ${REGIONS.length} acts and ${missions.length} missions.`,
     tip: "Use the Atlas search bar to jump directly to any unlocked mission, system, or topic like SQL, Git, or B-trees.",
   },
   {

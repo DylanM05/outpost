@@ -22,6 +22,7 @@ export const REGIONS: readonly Region[] = [
   { id: "act12", act: "Act XII", name: "The cluster", summary: "Orchestration and distributed systems" },
   { id: "act13", act: "Act XIII", name: "The engine room", summary: "Memory management, parsers, and VMs" },
   { id: "act14", act: "Act XIV", name: "The storage vault", summary: "Storage engines, MVCC, and search" },
+  { id: "act15", act: "Act XV", name: "The signal tower", summary: "Tokenization, RAG, and AI agents" },
 ];
 
 export function regionMeta(id: string): Region {

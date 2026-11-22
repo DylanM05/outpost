@@ -228,6 +228,18 @@ export const SKILLS = {
     name: "Full-text search and ranking",
     summary: "Build inverted and positional indexes for boolean and exact-phrase search, and rank matching documents with BM25.",
   },
+  "tokenization-context": {
+    name: "Tokenization and context windows",
+    summary: "Perform byte-pair encoding merges, split documents into overlapping chunks, and pack prompts within strict token budgets.",
+  },
+  "vector-rag": {
+    name: "Embeddings and RAG retrieval",
+    summary: "Compute cosine similarity, search metadata-filtered vector indexes, fuse hybrid rankings with RRF, and audit grounded citations.",
+  },
+  "agent-loops": {
+    name: "Tool-calling agents and guardrails",
+    summary: "Validate tool schemas, run step-capped ReAct loops with repeat breakers, enforce permission sandboxes and injection delimiters, and evaluate agent suites.",
+  },
 } as const;
 
 export type SkillId = keyof typeof SKILLS;
