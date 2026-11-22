@@ -336,6 +336,18 @@ export const SKILLS = {
     name: "Regression, forecasting, and cohorts",
     summary: "Fit ordinary least squares regression lines with R-squared, smooth time series with EWMA, and construct retention cohort matrices.",
   },
+  websockets: {
+    name: "WebSocket handshakes and framing",
+    summary: "Compute RFC 6455 Sec-WebSocket-Accept handshakes, encode and unmask binary frames, and route real-time broadcasts across presence rooms.",
+  },
+  "protobuf-grpc": {
+    name: "Protobuf binary encoding and gRPC",
+    summary: "Encode LEB128 varints and ZigZag signed integers, serialize tagged Protobuf messages, frame gRPC payloads, and enforce RPC deadlines.",
+  },
+  "graphql-batching": {
+    name: "GraphQL execution and DataLoader",
+    summary: "Parse nested GraphQL selection sets, resolve fields with depth limits and partial errors, and eliminate N+1 queries with DataLoader batching.",
+  },
 } as const;
 
 export type SkillId = keyof typeof SKILLS;
