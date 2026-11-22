@@ -200,6 +200,14 @@ export const SKILLS = {
     name: "Web crawling and HTML parsing",
     summary: "Normalize URLs, parse HTML links safely, enforce same-origin and page limits, and crawl graphs concurrently without loops.",
   },
+  orchestration: {
+    name: "Orchestration and reconciliation",
+    summary: "Write declarative control loops, schedule pods onto nodes with resource limits, manage rolling updates and rollbacks, and isolate services and secrets by namespace.",
+  },
+  "distributed-systems": {
+    name: "Distributed systems",
+    summary: "Route traffic with consistent hashing, coordinate leader leases with fencing tokens, enforce quorum reads/writes, compare vector clocks, and compact commit logs.",
+  },
 } as const;
 
 export type SkillId = keyof typeof SKILLS;
