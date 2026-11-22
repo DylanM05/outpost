@@ -252,6 +252,18 @@ export const SKILLS = {
     name: "Load balancing and resilience",
     summary: "Shape traffic with token buckets, balance across healthy nodes with smooth weighted round-robin, isolate faults with circuit breakers, and schedule backoff retries.",
   },
+  "stream-processing": {
+    name: "Event streams and windowing",
+    summary: "Aggregate event-time streams with tumbling and session windows, enforce watermarks for late data, and join time-series records with ASOF semantics.",
+  },
+  "analytical-storage": {
+    name: "Columnar storage and sketches",
+    summary: "Compress columns with dictionary and run-length encoding, prune row groups with min/max zone maps, and estimate stream frequencies and samples in bounded memory.",
+  },
+  "data-pipelines": {
+    name: "ETL pipelines and anomaly detection",
+    summary: "Coerce schemas with dead-letter routing, deduplicate CDC upserts, schedule minimal DAG backfills, and detect rolling Z-score anomalies.",
+  },
 } as const;
 
 export type SkillId = keyof typeof SKILLS;
