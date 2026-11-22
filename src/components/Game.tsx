@@ -20,6 +20,7 @@ import { parseSave, type Action, type Confidence, type Profile, type SaveData } 
 import { applyTheme, loadTheme, type ThemePreference } from "../game/theme";
 import { passedAll } from "../python/harness";
 import { PythonRunner, type RunnerStatus } from "../python/runner";
+import { JsRunner } from "../js/runner";
 import { relay } from "../relay/session";
 import { AtlasDialog } from "./AtlasDialog";
 import { Bench, type RunMode, type RunRecord } from "./Bench";
@@ -31,10 +32,12 @@ import { MOD_KEY } from "./Results";
 import { SkillsDialog } from "./SkillsDialog";
 import { maintenanceCalls } from "../game/maintenance";
 
-// One interpreter for the whole session. Created lazily, outside React state,
-// so StrictMode's double render doesn't start a second worker.
+// One interpreter per language for the whole session. Created lazily, outside
+// React state, so StrictMode's double render doesn't start a second worker.
 let sharedRunner: PythonRunner | null = null;
 const getRunner = () => (sharedRunner ??= new PythonRunner());
+let sharedJsRunner: JsRunner | null = null;
+const getJsRunner = () => (sharedJsRunner ??= new JsRunner());
 
 let runCount = 0;
 
@@ -48,7 +51,8 @@ interface Props {
 }
 
 export function Game({ save, profile, dispatch, initialDebugMode }: Props) {
-  const [runnerStatus, setRunnerStatus] = useState<RunnerStatus>("loading");
+  const [pyRunnerStatus, setPyRunnerStatus] = useState<RunnerStatus>("loading");
+  const [jsRunnerStatus, setJsRunnerStatus] = useState<RunnerStatus>("ready");
   const [busy, setBusy] = useState<RunMode | null>(null);
   const [lastRun, setLastRun] = useState<RunRecord | null>(null);
   const [energized, setEnergized] = useState<string | null>(null);
@@ -80,7 +84,7 @@ export function Game({ save, profile, dispatch, initialDebugMode }: Props) {
     return () => { window.clearInterval(timer); window.removeEventListener("focus", tick); };
   }, []);
 
-  useEffect(() => getRunner().subscribe(setRunnerStatus), []);
+  useEffect(() => getRunner().subscribe(setPyRunnerStatus), []);
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -98,6 +102,12 @@ export function Game({ save, profile, dispatch, initialDebugMode }: Props) {
   const selected = allMissions.find((m) => m.id === save.currentMission);
   const mission = selected?.reviewSkill && save.reviews[selected.reviewSkill]?.missionId !== selected.id
     ? missions[index] : selected ?? missions[index];
+  const isJsMission = mission.language === "javascript";
+  useEffect(() => {
+    if (!isJsMission) return;
+    return getJsRunner().subscribe(setJsRunnerStatus);
+  }, [isJsMission]);
+  const runnerStatus = isJsMission ? jsRunnerStatus : pyRunnerStatus;
   const calls = maintenanceCalls(missions, reviewMissions, save);
   const review = mission.reviewSkill ? save.reviews[mission.reviewSkill] : undefined;
   const support = supportChoice(mission, save, allMissions);
@@ -175,12 +185,13 @@ export function Game({ save, profile, dispatch, initialDebugMode }: Props) {
     const prediction = predicting ? code : undefined;
     const chosenConfidence = mode === "submit" ? confidence : null;
     setBusy(mode);
+    const runner = target.language === "javascript" ? getJsRunner() : getRunner();
     const outcome =
       target.kind === "terminal"
         ? await relay.check(target, mode, code)
         : predicting
-          ? await getRunner().run(target.program, "")
-          : await getRunner().run(code, target.checks, mode === "submit" ? target.hiddenChecks : "");
+          ? await runner.run(target.program, "")
+          : await runner.run(code, target.checks, mode === "submit" ? target.hiddenChecks : "");
     setBusy(null);
     setLastRun({ missionId: target.id, mode, outcome, key: ++runCount, prediction });
     if (mode !== "submit") return;

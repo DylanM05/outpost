@@ -70,11 +70,12 @@ export function Bench(props: BenchProps) {
 function CodeBench(props: BenchProps) {
   const { mission, run, busy } = props;
   const error = run?.outcome.kind === "finished" ? run.outcome.result.error : null;
+  const fileName = mission.language === "javascript" ? "main.js" : "main.py";
 
   return (
     <section className="bench" aria-label="Code">
       <div className="bench-head">
-        <span className="file-tab">main.py</span>
+        <span className="file-tab">{fileName}</span>
         <span className="support-note">
           {supportNote(props.support)}
         </span>
@@ -91,7 +92,8 @@ function CodeBench(props: BenchProps) {
       <CodeEditor
         docKey={mission.id}
         value={props.code}
-        label={`main.py for ${mission.title}`}
+        language={mission.language}
+        label={`${fileName} for ${mission.title}`}
         errorLine={error?.line ?? null}
         runKey={run?.key}
         onChange={props.onEdit}
@@ -119,7 +121,7 @@ function CodeBench(props: BenchProps) {
         {shouldShowConfidence(mission, props.support, props.completed) && (
           <ConfidencePicker value={props.confidence} disabled={busy !== null} onChange={props.onConfidence} />
         )}
-        <RunnerNote status={props.runnerStatus} busy={busy} />
+        <RunnerNote status={props.runnerStatus} busy={busy} language={mission.language} />
       </div>
 
       <div className="results" aria-live="polite">
@@ -132,11 +134,12 @@ function CodeBench(props: BenchProps) {
 function PredictBench(props: BenchProps) {
   const { mission, busy } = props;
   const check = () => props.onExecute("submit");
+  const fileName = mission.language === "javascript" ? "main.js" : "main.py";
 
   return (
     <section className="bench" aria-label="Program and prediction">
       <div className="bench-head">
-        <span className="file-tab">main.py</span>
+        <span className="file-tab">{fileName}</span>
         <span className="support-note">Read only</span>
       </div>
 
@@ -145,6 +148,7 @@ function PredictBench(props: BenchProps) {
         readOnly
         docKey={mission.id}
         value={mission.program}
+        language={mission.language}
         label={`Program for ${mission.title}, read only`}
         errorLine={null}
         runKey={undefined}
@@ -187,7 +191,7 @@ function PredictBench(props: BenchProps) {
         {shouldShowConfidence(mission, props.support, props.completed) && (
           <ConfidencePicker value={props.confidence} disabled={busy !== null} onChange={props.onConfidence} />
         )}
-        <RunnerNote status={props.runnerStatus} busy={busy} />
+        <RunnerNote status={props.runnerStatus} busy={busy} language={mission.language} />
       </div>
 
       <div className="results" aria-live="polite">
@@ -212,20 +216,22 @@ function supportNote({ level, source }: SupportChoice): string {
   }
 }
 
-function RunnerNote({ status, busy }: { status: RunnerStatus; busy: RunMode | null }) {
-  if (status === "loading" && busy === null) return <span className="runner-state">Python is starting…</span>;
+function RunnerNote({ status, busy, language }: { status: RunnerStatus; busy: RunMode | null; language: Mission["language"] }) {
+  const runtime = language === "javascript" ? "JavaScript" : "Python";
+  if (status === "loading" && busy === null) return <span className="runner-state">{runtime} is starting…</span>;
   if (status === "unavailable") {
-    return <span className="runner-state fault">Python couldn't start. Reload the page to try again.</span>;
+    return <span className="runner-state fault">{runtime} couldn't start. Reload the page to try again.</span>;
   }
   return null;
 }
 
 function CodeResults({ mission, run, busy, runnerStatus, systemOnline, next, onOpen, easierStart, onEasierStart }: BenchProps) {
+  const runtime = mission.language === "javascript" ? "JavaScript" : "Python";
   if (busy) {
     return (
       <p className="status">
         {runnerStatus === "loading"
-          ? "Starting Python. The first run takes a few seconds."
+          ? `Starting ${runtime}. The first run takes a few seconds.`
           : busy === "submit"
             ? "Running every test, including the hidden ones…"
             : "Running your code…"}
@@ -242,7 +248,7 @@ function CodeResults({ mission, run, busy, runnerStatus, systemOnline, next, onO
   }
 
   const { outcome, mode } = run;
-  if (outcome.kind !== "finished") return <RunProblem outcome={outcome} />;
+  if (outcome.kind !== "finished") return <RunProblem outcome={outcome} language={mission.language} />;
 
   const { result } = outcome;
   const testsFirst = mission.scene !== "console";
@@ -255,7 +261,7 @@ function CodeResults({ mission, run, busy, runnerStatus, systemOnline, next, onO
         <p className="status">{summary(mission, mode, result)}</p>
       )}
       {mode === "submit" && easierStart && <EasierStartOffer level={easierStart} onSwitch={onEasierStart} />}
-      {result.error && <ErrorBox error={result.error} />}
+      {result.error && <ErrorBox error={result.error} language={mission.language} />}
       {testsFirst && <Tests result={result} />}
       <Output result={result} />
       {!testsFirst && <Tests result={result} />}
@@ -264,10 +270,11 @@ function CodeResults({ mission, run, busy, runnerStatus, systemOnline, next, onO
 }
 
 function PredictResults({ mission, run, busy, runnerStatus, systemOnline, next, onOpen }: BenchProps) {
+  const runtime = mission.language === "javascript" ? "JavaScript" : "Python";
   if (busy) {
     return (
       <p className="status">
-        {runnerStatus === "loading" ? "Starting Python. The first check takes a few seconds." : "Running the program…"}
+        {runnerStatus === "loading" ? `Starting ${runtime}. The first check takes a few seconds.` : "Running the program…"}
       </p>
     );
   }
@@ -282,14 +289,14 @@ function PredictResults({ mission, run, busy, runnerStatus, systemOnline, next, 
   }
 
   const { outcome } = run;
-  if (outcome.kind !== "finished") return <RunProblem outcome={outcome} />;
+  if (outcome.kind !== "finished") return <RunProblem outcome={outcome} language={mission.language} />;
 
   const { result } = outcome;
   if (result.error) {
     return (
       <>
         <p className="status">The program itself failed, so this mission has a fault. Please report it.</p>
-        <ErrorBox error={result.error} />
+        <ErrorBox error={result.error} language={mission.language} />
       </>
     );
   }

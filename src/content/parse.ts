@@ -4,6 +4,9 @@ import { isSkillId, type SkillId } from "./skills";
 export const SUPPORT_LEVELS = ["guided", "standard", "challenge"] as const;
 export type SupportLevel = (typeof SUPPORT_LEVELS)[number];
 
+export const LANGUAGES = ["python", "javascript"] as const;
+export type Language = (typeof LANGUAGES)[number];
+
 // code: write a program that passes tests. predict: read a program and type
 // exactly what it prints, without running it. terminal: work in the relay
 // terminal, a real Linux shell, until the machine is in the right state.
@@ -21,6 +24,7 @@ export interface Mission {
   // The region folder the mission was loaded from; empty for maintenance calls.
   region: string;
   kind: MissionKind;
+  language: Language;
   title: string;
   system: string;
   symbol: SchematicSymbol;
@@ -104,6 +108,9 @@ export function parseMission(source: string, file: string, region = ""): Mission
   const kind = meta.get("kind") ?? "code";
   if (!oneOf(KINDS, kind)) fail(`kind must be one of ${KINDS.join(", ")}`);
 
+  const language = meta.get("language") ?? "python";
+  if (!oneOf(LANGUAGES, language)) fail(`language must be one of ${LANGUAGES.join(", ")}`);
+
   const skills = field("skills").split(",").map((s) => s.trim());
   for (const skill of skills) if (!isSkillId(skill)) fail(`unknown skill "${skill}"`);
 
@@ -124,6 +131,7 @@ export function parseMission(source: string, file: string, region = ""): Mission
     id: field("id"),
     region,
     kind: kind as MissionKind,
+    language: language as Language,
     title: field("title"),
     system: field("system"),
     symbol: symbol as SchematicSymbol,

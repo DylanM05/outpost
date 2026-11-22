@@ -39,7 +39,15 @@ export function RestoredBanner({
   );
 }
 
-export function RunProblem({ outcome, relay = false }: { outcome: Exclude<RunOutcome, { kind: "finished" }>; relay?: boolean }) {
+export function RunProblem({
+  outcome,
+  relay = false,
+  language = "python",
+}: {
+  outcome: Exclude<RunOutcome, { kind: "finished" }>;
+  relay?: boolean;
+  language?: Mission["language"];
+}) {
   if (outcome.kind === "timeout") {
     return (
       <div className="fault-box">
@@ -52,16 +60,17 @@ export function RunProblem({ outcome, relay = false }: { outcome: Exclude<RunOut
       </div>
     );
   }
+  const runtimeLabel = relay ? "The relay terminal" : language === "javascript" ? "JavaScript" : "Python";
   return (
     <div className="fault-box">
-      <h3>{relay ? "The relay terminal stopped unexpectedly" : "Python stopped unexpectedly"}</h3>
+      <h3>{runtimeLabel} stopped unexpectedly</h3>
       <p className="mono">{outcome.message}</p>
       <p>Try again to restart it.</p>
     </div>
   );
 }
 
-export function ErrorBox({ error }: { error: RunError }) {
+export function ErrorBox({ error, language = "python" }: { error: RunError; language?: Mission["language"] }) {
   return (
     <div className="fault-box">
       <h3>
@@ -69,7 +78,7 @@ export function ErrorBox({ error }: { error: RunError }) {
         {error.line ? ` on line ${error.line}` : ""}
       </h3>
       <p className="mono">{error.message}</p>
-      <p>{explainError(error.type)}</p>
+      <p>{explainError(error.type, language)}</p>
     </div>
   );
 }

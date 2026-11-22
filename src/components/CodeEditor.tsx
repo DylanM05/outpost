@@ -1,4 +1,5 @@
 import { defaultKeymap, history, historyKeymap, indentWithTab } from "@codemirror/commands";
+import { javascript } from "@codemirror/lang-javascript";
 import { python } from "@codemirror/lang-python";
 import { bracketMatching, HighlightStyle, indentOnInput, indentUnit, syntaxHighlighting } from "@codemirror/language";
 import { Annotation, EditorState, Prec, StateEffect, StateField, type Extension } from "@codemirror/state";
@@ -14,12 +15,14 @@ import {
 } from "@codemirror/view";
 import { tags as t } from "@lezer/highlight";
 import { useEffect, useRef, type RefObject } from "react";
+import type { Language } from "../content/parse";
 
 interface Props {
   // Changing docKey starts a fresh editor state (and undo history).
   docKey: string;
   value: string;
   label: string;
+  language?: Language;
   readOnly?: boolean;
   className?: string;
   errorLine: number | null;
@@ -81,6 +84,7 @@ const theme = EditorView.theme(
 );
 
 function createState(doc: string, props: RefObject<Props>): EditorState {
+  const isJs = props.current.language === "javascript";
   const extensions: Extension[] = [
     lineNumbers(),
     highlightActiveLineGutter(),
@@ -89,9 +93,9 @@ function createState(doc: string, props: RefObject<Props>): EditorState {
     history(),
     indentOnInput(),
     bracketMatching(),
-    indentUnit.of("    "),
-    EditorState.tabSize.of(4),
-    python(),
+    indentUnit.of(isJs ? "  " : "    "),
+    EditorState.tabSize.of(isJs ? 2 : 4),
+    isJs ? javascript() : python(),
     syntaxHighlighting(highlight),
     theme,
     errorLineField,

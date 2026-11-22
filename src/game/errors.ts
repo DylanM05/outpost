@@ -1,5 +1,7 @@
+import type { Language } from "../content/parse";
+
 // Plain-language follow-ups for the errors beginners meet most often.
-const EXPLANATIONS: Record<string, string> = {
+const PYTHON_EXPLANATIONS: Record<string, string> = {
   SyntaxError:
     "Python couldn't read this line, so none of your program ran. Look for a missing quote, bracket, or colon on this line or the one before it.",
   IndentationError:
@@ -20,6 +22,19 @@ const EXPLANATIONS: Record<string, string> = {
   SystemExit: "Remove the call to exit() so the tests can run.",
 };
 
-export function explainError(type: string): string {
-  return EXPLANATIONS[type] ?? "Read the message above, then look at the line it points to.";
+const JS_EXPLANATIONS: Record<string, string> = {
+  SyntaxError:
+    "JavaScript couldn't parse this code, so none of your program ran. Look for a missing brace, parenthesis, quote, or comma nearby.",
+  ReferenceError:
+    "JavaScript doesn't recognize a variable or function name. Check the spelling and make sure it is declared with const, let, or function before use.",
+  TypeError:
+    "A value wasn't the type expected — for example, reading a property of undefined/null, reassigning a const, or calling something that isn't a function.",
+  RangeError:
+    "A value was outside its valid range, or a recursive function overflowed the call stack without reaching a base case.",
+  URIError: "A URI encoding or decoding function received malformed characters.",
+};
+
+export function explainError(type: string, language: Language = "python"): string {
+  const table = language === "javascript" ? JS_EXPLANATIONS : PYTHON_EXPLANATIONS;
+  return table[type] ?? "Read the message above, then look at the line it points to.";
 }
