@@ -324,6 +324,18 @@ export const SKILLS = {
     name: "Autoscaling, queues, and serverless",
     summary: "Scale replica pools with cooldown hysteresis, deliver messages with SQS visibility timeouts and DLQs, and route serverless invocations across warm containers.",
   },
+  "tabular-wrangling": {
+    name: "Tabular DataFrames and joins",
+    summary: "Filter and aggregate structured datasets, perform inner and left hash joins, impute missing data, and reshape tables with pivot and melt.",
+  },
+  "applied-statistics": {
+    name: "Descriptive stats and A/B testing",
+    summary: "Compute quantiles, IQR fences, Pearson correlation, two-proportion Z-tests, and bootstrap confidence intervals while spotting Simpson's paradox.",
+  },
+  "forecasting-cohorts": {
+    name: "Regression, forecasting, and cohorts",
+    summary: "Fit ordinary least squares regression lines with R-squared, smooth time series with EWMA, and construct retention cohort matrices.",
+  },
 } as const;
 
 export type SkillId = keyof typeof SKILLS;
