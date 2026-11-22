@@ -6,15 +6,18 @@ import { Game } from "../src/components/Game";
 import { Plant } from "../src/components/Plant";
 import { SkillsDialog } from "../src/components/SkillsDialog";
 import { missions, reviewMissions, systemsIn } from "../src/content";
-import { REGIONS, regionMeta } from "../src/content/regions";
+import { regionMeta, regionsInTrack } from "../src/content/regions";
 import { emptySave } from "../src/game/save";
 
-test("topbar uses a compact region switcher instead of 14 inline region buttons", () => {
+test("topbar uses a compact region switcher and track switcher instead of inline region buttons", () => {
   const save = emptySave();
   save.profile = { experience: "experienced", background: [], support: "challenge" };
   save.currentMission = missions[0].id;
   const html = renderToStaticMarkup(<Game save={save} profile={save.profile} dispatch={() => {}} />);
 
+  expect(html).toContain("track-switcher");
+  expect(html).toContain("Python");
+  expect(html).toContain("JS");
   expect(html).toContain("region-switcher");
   expect(html).toContain("Act I");
   expect(html).toContain("Kestrel Ridge");
@@ -23,14 +26,14 @@ test("topbar uses a compact region switcher instead of 14 inline region buttons"
   expect(html).toContain("Display shift");
 });
 
-test("AtlasDialog lists all 14 acts with metadata, progress, and systems", () => {
+test("AtlasDialog scopes regions by learning track and exposes track tabs", () => {
   const save = emptySave();
   save.profile = { experience: "experienced", background: [], support: "challenge" };
-  const html = renderToStaticMarkup(
+  const pyHtml = renderToStaticMarkup(
     <AtlasDialog
       open
       currentRegion="act14"
-      currentMissionId={missions[missions.length - 1].id}
+      currentMissionId={missions[0].id}
       missions={missions}
       save={save}
       onClose={() => {}}
@@ -38,14 +41,31 @@ test("AtlasDialog lists all 14 acts with metadata, progress, and systems", () =>
     />,
   );
 
-  expect(html).toContain("Station atlas");
-  for (const region of REGIONS) {
-    expect(html).toContain(region.act);
-    expect(html).toContain(region.name);
-    expect(html).toContain(region.summary);
+  expect(pyHtml).toContain("Station atlas");
+  expect(pyHtml).toContain("Python &amp; Systems");
+  expect(pyHtml).toContain("JavaScript");
+  for (const region of regionsInTrack("python")) {
+    expect(pyHtml).toContain(region.act);
+    expect(pyHtml).toContain(region.name);
+    expect(pyHtml).toContain(region.summary);
   }
-  expect(html).toContain("Journal desk");
-  expect(html).toContain("Vault audit");
+  expect(pyHtml).toContain("Journal desk");
+  expect(pyHtml).toContain("Vault audit");
+
+  const jsRegion = regionsInTrack("javascript")[0];
+  const jsHtml = renderToStaticMarkup(
+    <AtlasDialog
+      open
+      currentRegion={jsRegion.id}
+      currentMissionId={missions.find((m) => m.region === jsRegion.id)!.id}
+      missions={missions}
+      save={save}
+      onClose={() => {}}
+      onOpen={() => {}}
+    />,
+  );
+  expect(jsHtml).toContain("JS I");
+  expect(jsHtml).toContain("The script annex");
 });
 
 test("SkillsDialog renders status filter pills with counts and act plates", () => {

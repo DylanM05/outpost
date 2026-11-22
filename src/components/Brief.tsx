@@ -71,9 +71,17 @@ export function Brief({
   const regionMissions = missions.filter((m) => m.region === mission.region);
   const positionInRegion = regionMissions.indexOf(mission) + 1;
   const globalIndex = missions.indexOf(mission);
-  const prevMission = globalIndex > 0 && isUnlocked(missions, save, globalIndex - 1, unlockAll) ? missions[globalIndex - 1] : null;
+  const prevMission =
+    globalIndex > 0 &&
+    regionMeta(missions[globalIndex - 1].region).track === region.track &&
+    isUnlocked(missions, save, globalIndex - 1, unlockAll)
+      ? missions[globalIndex - 1]
+      : null;
   const nextStep =
-    globalIndex >= 0 && globalIndex + 1 < missions.length && isUnlocked(missions, save, globalIndex + 1, unlockAll)
+    globalIndex >= 0 &&
+    globalIndex + 1 < missions.length &&
+    regionMeta(missions[globalIndex + 1].region).track === region.track &&
+    isUnlocked(missions, save, globalIndex + 1, unlockAll)
       ? missions[globalIndex + 1]
       : null;
 

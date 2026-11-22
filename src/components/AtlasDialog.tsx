@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { systemsIn } from "../content";
 import type { Mission } from "../content/parse";
-import { REGIONS, regionMeta } from "../content/regions";
+import { REGIONS, regionMeta, TRACKS, trackOfRegion, type TrackId } from "../content/regions";
 import { SKILLS } from "../content/skills";
 import { isRestored, isUnlocked, regionEntry, systemProgress, type SystemState } from "../game/rules";
 import type { SaveData } from "../game/save";
@@ -58,6 +58,7 @@ function kindBadge(mission: Mission): string | null {
 export function AtlasDialog({ open, currentRegion, currentMissionId, missions, save, unlockAll = false, onClose, onOpen }: Props) {
   const dialog = useRef<HTMLDialogElement>(null);
   const searchInput = useRef<HTMLInputElement>(null);
+  const [selectedTrack, setSelectedTrack] = useState<TrackId>(() => trackOfRegion(currentRegion));
   const [selectedRegion, setSelectedRegion] = useState(currentRegion);
   const [query, setQuery] = useState("");
 
@@ -65,6 +66,7 @@ export function AtlasDialog({ open, currentRegion, currentMissionId, missions, s
     const element = dialog.current;
     if (!element) return;
     if (open) {
+      setSelectedTrack(trackOfRegion(currentRegion));
       setSelectedRegion(currentRegion);
       setQuery("");
       if (!element.open) element.showModal();
@@ -83,6 +85,19 @@ export function AtlasDialog({ open, currentRegion, currentMissionId, missions, s
       })),
     [missions, save, unlockAll],
   );
+
+  const visibleRegionStats = useMemo(
+    () => regionStats.filter((r) => r.region.track === selectedTrack),
+    [regionStats, selectedTrack],
+  );
+
+  const selectTrack = (track: TrackId) => {
+    setSelectedTrack(track);
+    const inTrack = regionStats.filter((r) => r.region.track === track);
+    const currentInTrack = inTrack.find((r) => r.region.id === currentRegion);
+    const firstActive = inTrack.find((r) => r.state === "underway") ?? inTrack.find((r) => r.state === "ready");
+    setSelectedRegion((currentInTrack ?? firstActive ?? inTrack[0])?.region.id ?? currentRegion);
+  };
 
   const totalDone = useMemo(() => missions.filter((m) => isRestored(save, m.id)).length, [missions, save]);
   const regionsOnline = regionStats.filter((r) => r.state === "online").length;
@@ -118,9 +133,11 @@ export function AtlasDialog({ open, currentRegion, currentMissionId, missions, s
     return matches;
   }, [trimmed, missions, save, unlockAll]);
 
-  const activeEntry = regionStats.find((r) => r.region.id === selectedRegion) ?? regionStats[0];
+  const activeEntry =
+    visibleRegionStats.find((r) => r.region.id === selectedRegion) ?? visibleRegionStats[0] ?? regionStats[0];
   const activeSystems = systemsIn(activeEntry.region.id);
-  const previousRegion = activeEntry.index > 0 ? REGIONS[activeEntry.index - 1] : null;
+  const trackIdx = visibleRegionStats.findIndex((r) => r.region.id === activeEntry.region.id);
+  const previousRegion = trackIdx > 0 ? visibleRegionStats[trackIdx - 1].region : null;
 
   const jumpTo = (missionId: string) => {
     onOpen(missionId);
@@ -177,6 +194,31 @@ export function AtlasDialog({ open, currentRegion, currentMissionId, missions, s
         )}
       </div>
 
+      {!trimmed && (
+        <div className="atlas-tracks" role="tablist" aria-label="Learning paths">
+          {TRACKS.map((track) => {
+            const stats = regionStats.filter((r) => r.region.track === track.id);
+            const doneCount = stats.filter((r) => r.state === "online").length;
+            const active = track.id === selectedTrack;
+            return (
+              <button
+                key={track.id}
+                type="button"
+                role="tab"
+                aria-selected={active}
+                className={`atlas-track-tab${active ? " active" : ""}`}
+                onClick={() => selectTrack(track.id)}
+              >
+                <span className="atlas-track-name">{track.name}</span>
+                <span className="atlas-track-count">
+                  {doneCount}/{stats.length} {stats.length === 1 ? "act" : "acts"}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      )}
+
       {trimmed ? (
         <div className="atlas-results">
           {searchMatches.length === 0 ? (
@@ -219,7 +261,7 @@ export function AtlasDialog({ open, currentRegion, currentMissionId, missions, s
       ) : (
         <div className="atlas-grid">
           <nav className="atlas-regions" aria-label="Regions">
-            {regionStats.map(({ region, state, systemsOnline, systemsTotal }) => {
+            {visibleRegionStats.map(({ region, state, systemsOnline, systemsTotal }) => {
               const selected = region.id === activeEntry.region.id;
               const isCurrent = region.id === currentRegion;
               return (

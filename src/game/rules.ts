@@ -1,4 +1,5 @@
 import type { Mission, SupportLevel, System } from "../content/parse";
+import { trackOfRegion, type TrackId } from "../content/regions";
 import { SKILLS, type SkillId } from "../content/skills";
 import type { Completion, Experience, Profile, SaveData } from "./save";
 
@@ -29,9 +30,12 @@ export function isRestored(save: SaveData, missionId: string): boolean {
 }
 
 // A finished mission stays open even if a mission added before it later
-// hasn't been played yet.
+// hasn't been played yet. The opening mission of every independent track is
+// unlocked from day one so players can start on either language path or jump
+// back and forth freely.
 export function isUnlocked(missions: Mission[], save: SaveData, index: number, unlockAll = false): boolean {
   if (unlockAll || index <= 0 || canSkipAhead(save.profile)) return true;
+  if (trackOfRegion(missions[index].region) !== trackOfRegion(missions[index - 1].region)) return true;
   return isRestored(save, missions[index].id) || isRestored(save, missions[index - 1].id);
 }
 
@@ -58,6 +62,15 @@ export function regionEntry(missions: Mission[], region: string, save: SaveData,
   const open = (m: Mission) => isUnlocked(missions, save, missions.indexOf(m), unlockAll);
   if (inRegion.length === 0 || !open(inRegion[0])) return null;
   return inRegion.find((m) => !isRestored(save, m.id) && open(m)) ?? inRegion[0];
+}
+
+// Where selecting a track takes you: its first open, unfinished mission, or
+// its first mission once the entire track is restored.
+export function trackEntry(missions: Mission[], track: TrackId, save: SaveData, unlockAll = false): Mission | null {
+  const inTrack = missions.filter((m) => trackOfRegion(m.region) === track);
+  if (inTrack.length === 0) return null;
+  const open = (m: Mission) => isUnlocked(missions, save, missions.indexOf(m), unlockAll);
+  return inTrack.find((m) => !isRestored(save, m.id) && open(m)) ?? inTrack[0];
 }
 
 // Where selecting a system takes you: its first open, unfinished mission, or
@@ -172,12 +185,26 @@ export function hintsUnlocked(mission: Mission, save: SaveData): boolean {
   return !mission.assessment || (save.submits[mission.id] ?? 0) >= ASSESSMENT_HINT_THRESHOLD;
 }
 
-// The next mission worth playing after `from`: the first unlocked one that
-// isn't restored yet, wrapping around to earlier gaps.
+// The next mission worth playing after `from` within the same track: the first
+// unlocked one that isn't restored yet, wrapping around to earlier gaps in that
+// track.
 export function nextMission(missions: Mission[], save: SaveData, from: number, unlockAll = false): Mission | null {
-  for (let step = 1; step <= missions.length; step++) {
-    const index = (from + step) % missions.length;
-    if (!isRestored(save, missions[index].id) && isUnlocked(missions, save, index, unlockAll)) return missions[index];
+  if (missions.length === 0) return null;
+  if (from < 0 || from >= missions.length) {
+    for (let i = 0; i < missions.length; i++) {
+      if (!isRestored(save, missions[i].id) && isUnlocked(missions, save, i, unlockAll)) return missions[i];
+    }
+    return null;
+  }
+  const track = trackOfRegion(missions[from].region);
+  const indices: number[] = [];
+  for (let i = 0; i < missions.length; i++) {
+    if (trackOfRegion(missions[i].region) === track) indices.push(i);
+  }
+  const pos = indices.indexOf(from);
+  for (let step = 1; step <= indices.length; step++) {
+    const idx = indices[(pos + step) % indices.length];
+    if (!isRestored(save, missions[idx].id) && isUnlocked(missions, save, idx, unlockAll)) return missions[idx];
   }
   return null;
 }

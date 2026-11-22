@@ -1,8 +1,8 @@
 import { useState, type FormEvent } from "react";
 import { systemsIn } from "../content";
-import { REGIONS } from "../content/regions";
+import { REGIONS, TRACKS, type TrackId } from "../content/regions";
 import type { Mission } from "../content/parse";
-import { SUPPORT_FOR_EXPERIENCE, SUPPORT_LABEL } from "../game/rules";
+import { SUPPORT_FOR_EXPERIENCE, SUPPORT_LABEL, trackEntry } from "../game/rules";
 import type { Background, Experience, Profile, SaveData } from "../game/save";
 import { Schematic } from "./Schematic";
 
@@ -39,21 +39,26 @@ const BACKGROUND_OPTIONS: { id: Background; label: string }[] = [
 interface Props {
   missions: Mission[];
   save: SaveData;
-  onStart(profile: Profile): void;
+  onStart(profile: Profile, startingMissionId: string): void;
 }
 
 export function Onboarding({ missions, save, onStart }: Props) {
+  const [track, setTrack] = useState<TrackId>("python");
   const [experience, setExperience] = useState<Experience | null>(null);
   const [background, setBackground] = useState<Background[]>([]);
   const support = experience ? SUPPORT_FOR_EXPERIENCE[experience] : null;
   const returning = Object.keys(save.completions).length > 0 || Object.keys(save.drafts).length > 0;
+  const previewRegion = REGIONS.find((r) => r.track === track) ?? REGIONS[0];
 
   const toggle = (id: Background) =>
     setBackground((current) => (current.includes(id) ? current.filter((b) => b !== id) : [...current, id]));
 
   const submit = (event: FormEvent) => {
     event.preventDefault();
-    if (experience && support) onStart({ experience, background, support });
+    if (experience && support) {
+      const startMission = trackEntry(missions, track, save, true) ?? missions[0];
+      onStart({ experience, background, support }, startMission.id);
+    }
   };
 
   return (
@@ -61,9 +66,28 @@ export function Onboarding({ missions, save, onStart }: Props) {
       <form className="onboarding-form" onSubmit={submit}>
         <h1>Kestrel Ridge has been dark for 211 days.</h1>
         <p className="lede">
-          You're the outpost's new maintenance engineer. Every system here runs on Python, and every one of them is broken.
-          You repair them by writing code: the outpost runs what you write, and the schematic shows what it changed.
+          You're the outpost's new maintenance engineer. Every system here runs on Python or JavaScript, and every one of
+          them is broken. You repair them by writing real code — and you can switch between language paths at any time.
         </p>
+
+        <fieldset>
+          <legend>Which path do you want to start on?</legend>
+          <p className="field-note">Both paths start unlocked from day one — switch back and forth anytime from the top bar.</p>
+          <div className="chips">
+            {TRACKS.map((option) => (
+              <label key={option.id} className="chip">
+                <input
+                  type="radio"
+                  name="track"
+                  value={option.id}
+                  checked={track === option.id}
+                  onChange={() => setTrack(option.id)}
+                />
+                {option.name}
+              </label>
+            ))}
+          </div>
+        </fieldset>
 
         <fieldset>
           <legend>How much code have you written?</legend>
@@ -112,10 +136,10 @@ export function Onboarding({ missions, save, onStart }: Props) {
       <div className="onboarding-board" aria-hidden="true">
         <Schematic
           missions={missions}
-          systems={systemsIn(REGIONS[0].id)}
+          systems={systemsIn(previewRegion.id)}
           save={save}
-          act={REGIONS[0].act}
-          title={REGIONS[0].name}
+          act={previewRegion.act}
+          title={previewRegion.name}
         />
       </div>
     </main>

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type Dispatch } from "react";
 import { allMissions, missions, regionOf, reviewMissions, systemOf, systemsIn } from "../content";
-import { REGIONS, regionMeta } from "../content/regions";
+import { REGIONS, regionMeta, regionsInTrack, TRACKS, type TrackId } from "../content/regions";
 import { SUPPORT_LEVELS, type SupportLevel } from "../content/parse";
 import { comparePrediction } from "../game/predict";
 import {
@@ -14,6 +14,7 @@ import {
   supportChoice,
   supportFor,
   systemProgress,
+  trackEntry,
 } from "../game/rules";
 import { loadDebugMode, storeDebugMode } from "../game/debug";
 import { parseSave, type Action, type Confidence, type Profile, type SaveData } from "../game/save";
@@ -118,6 +119,9 @@ export function Game({ save, profile, dispatch, initialDebugMode }: Props) {
   const run = lastRun?.missionId === mission.id ? lastRun : null;
   const region = regionOf(mission);
   const currentRegionMeta = regionMeta(region);
+  const currentTrack = currentRegionMeta.track;
+  const lastMissionByTrack = useRef<Partial<Record<TrackId, string>>>({});
+  lastMissionByTrack.current[currentTrack] = mission.id;
   const regionSystems = systemsIn(region);
   const online = regionSystems.filter((s) => systemProgress(missions, s, save).state === "online").length;
   const assessment = missions.find((m) => m.region === region && m.assessment);
@@ -129,6 +133,17 @@ export function Game({ save, profile, dispatch, initialDebugMode }: Props) {
     setLastRun(null);
     setConfidence(null);
     dispatch({ type: "open", missionId });
+  };
+
+  const switchTrack = (track: TrackId) => {
+    if (track === currentTrack) return;
+    const remembered = lastMissionByTrack.current[track];
+    if (remembered && allMissions.some((m) => m.id === remembered)) {
+      open(remembered);
+      return;
+    }
+    const entry = trackEntry(missions, track, save, debugMode);
+    if (entry) open(entry.id);
   };
 
   const regionIndex = Math.max(0, REGIONS.findIndex((r) => r.id === region));
@@ -240,6 +255,20 @@ export function Game({ save, profile, dispatch, initialDebugMode }: Props) {
       <header className="topbar">
         <div className="brand">
           <span className="wordmark">Outpost</span>
+          <div className="track-switcher" role="group" aria-label="Learning path">
+            {TRACKS.map((track) => (
+              <button
+                key={track.id}
+                type="button"
+                className={track.id === currentTrack ? "active" : undefined}
+                aria-pressed={track.id === currentTrack}
+                title={`Switch to the ${track.name} path`}
+                onClick={() => switchTrack(track.id)}
+              >
+                {track.shortName}
+              </button>
+            ))}
+          </div>
           <button
             className="region-switcher"
             data-tour="region-switcher"
@@ -317,10 +346,14 @@ export function Game({ save, profile, dispatch, initialDebugMode }: Props) {
               value={region}
               onChange={(e) => jumpToRegion(e.target.value)}
             >
-              {REGIONS.map((r) => (
-                <option key={r.id} value={r.id}>
-                  {r.act}: {r.name}
-                </option>
+              {TRACKS.map((track) => (
+                <optgroup key={track.id} label={track.name}>
+                  {regionsInTrack(track.id).map((r) => (
+                    <option key={r.id} value={r.id}>
+                      {r.act}: {r.name}
+                    </option>
+                  ))}
+                </optgroup>
               ))}
             </select>
             <button

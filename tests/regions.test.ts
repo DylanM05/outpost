@@ -1,7 +1,7 @@
 import { expect, test } from "vitest";
 import { missions } from "../src/content";
-import { REGIONS } from "../src/content/regions";
-import { isUnlocked, regionEntry } from "../src/game/rules";
+import { REGIONS, regionsInTrack } from "../src/content/regions";
+import { isUnlocked, nextMission, regionEntry, trackEntry } from "../src/game/rules";
 import { emptySave, reducer, type Completion, type SaveData } from "../src/game/save";
 
 const [ridge, survey] = REGIONS.map((r) => r.id);
@@ -46,4 +46,25 @@ test("passing Kestrel Ridge's final mission doesn't restore the survey office", 
   const surveyMissions = missions.filter((m) => m.region === survey);
   expect(surveyMissions.some((m) => save.completions[m.id])).toBe(false);
   expect(isUnlocked(missions, { ...save, profile: { ...save.profile!, experience: "new" } }, missions.indexOf(surveyMissions[0]))).toBe(true);
+});
+
+test("both Python and JavaScript tracks start unlocked from day one for beginners", () => {
+  const beginner = player("new");
+  const jsFirstRegion = regionsInTrack("javascript")[0];
+  const jsFirstMission = missions.find((m) => m.region === jsFirstRegion.id)!;
+
+  expect(regionEntry(missions, ridge, beginner)?.region).toBe(ridge);
+  expect(regionEntry(missions, jsFirstRegion.id, beginner)).toBe(jsFirstMission);
+  expect(trackEntry(missions, "javascript", beginner)).toBe(jsFirstMission);
+  // Second mission within JS still requires completing the first JS mission.
+  const jsSecondIdx = missions.indexOf(jsFirstMission) + 1;
+  expect(isUnlocked(missions, beginner, jsSecondIdx)).toBe(false);
+});
+
+test("nextMission stays within the current track instead of jumping across languages", () => {
+  const pythonRegions = regionsInTrack("python");
+  const pythonMissions = missions.filter((m) => pythonRegions.some((r) => r.id === m.region));
+  const allPythonDone = player("new", pythonMissions.map((m) => m.id));
+  const lastPythonIdx = missions.indexOf(pythonMissions.at(-1)!);
+  expect(nextMission(missions, allPythonDone, lastPythonIdx)).toBeNull();
 });

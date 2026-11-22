@@ -16,7 +16,7 @@ export function App() {
       <Onboarding
         missions={missions}
         save={save}
-        onStart={(profile) => dispatch({ type: "start", profile, missionId: missions[0].id })}
+        onStart={(profile, missionId) => dispatch({ type: "start", profile, missionId })}
       />
     );
   }
