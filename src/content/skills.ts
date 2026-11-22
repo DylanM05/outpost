@@ -276,6 +276,18 @@ export const SKILLS = {
     name: "Inode filesystems and allocators",
     summary: "Allocate contiguous extents via disk bitmaps, separate directory links from reference-counted inodes, split and coalesce binary buddy blocks, and resolve symlinks safely.",
   },
+  "financial-ledgers": {
+    name: "Double-entry ledgers and money math",
+    summary: "Eliminate floating-point money drift with integer minor units, split amounts without losing pennies, enforce balanced double-entry journals, and reconcile statements.",
+  },
+  "event-sourcing": {
+    name: "Event sourcing and sagas",
+    summary: "Enforce optimistic concurrency on append-only event streams, accelerate replay with snapshots, guard retries with idempotency keys, and roll back failed workflows via compensating sagas.",
+  },
+  "matching-engines": {
+    name: "Order books and settlement",
+    summary: "Match bids and asks by strict price-time priority, handle partial fills and cancellations, compute spreads and VWAP, and settle trades atomically.",
+  },
 } as const;
 
 export type SkillId = keyof typeof SKILLS;
