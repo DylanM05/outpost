@@ -312,6 +312,18 @@ export const SKILLS = {
     name: "CDN edge caching and invalidation",
     summary: "Enforce Cache-Control freshness and s-maxage precedence, invalidate objects by surrogate tags, and coalesce concurrent misses with an origin shield.",
   },
+  "cloud-iam-vpc": {
+    name: "Cloud IAM and VPC networking",
+    summary: "Evaluate explicit-deny-wins IAM policies, enforce stateful VPC security group rules, and carve non-overlapping CIDR subnets.",
+  },
+  "infra-as-code": {
+    name: "Infrastructure as Code and drift",
+    summary: "Order declarative resource graphs, compute create/update/replace/destroy plans, detect live drift, and guard state with distributed locks.",
+  },
+  "cloud-runtime": {
+    name: "Autoscaling, queues, and serverless",
+    summary: "Scale replica pools with cooldown hysteresis, deliver messages with SQS visibility timeouts and DLQs, and route serverless invocations across warm containers.",
+  },
 } as const;
 
 export type SkillId = keyof typeof SKILLS;
