@@ -220,6 +220,14 @@ export const SKILLS = {
     name: "Compilers and virtual machines",
     summary: "Fold constants, compile ASTs with jump backpatching into flat stack bytecode, and execute programs on a stack-based virtual machine.",
   },
+  "storage-engines": {
+    name: "Database storage engines",
+    summary: "Build CRC-checked write-ahead logs, transactional crash recovery, Bloom filters, LSM-tree SSTables and compaction, LRU buffer pools, B-Trees, and MVCC snapshot isolation.",
+  },
+  "search-indexing": {
+    name: "Full-text search and ranking",
+    summary: "Build inverted and positional indexes for boolean and exact-phrase search, and rank matching documents with BM25.",
+  },
 } as const;
 
 export type SkillId = keyof typeof SKILLS;
