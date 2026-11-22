@@ -1,5 +1,6 @@
 import { useEffect, useState, useSyncExternalStore } from "react";
 import type { Mission, System } from "../content/parse";
+import type { Region } from "../content/regions";
 import type { TelemetryEvent } from "../python/harness";
 import type { SaveData } from "../game/save";
 import { relay, type FileEntry } from "../relay/session";
@@ -11,6 +12,7 @@ import { Schematic } from "./Schematic";
 interface Props {
   missions: Mission[];
   systems: System[];
+  region: Region;
   save: SaveData;
   mission: Mission;
   energized: string | null;
@@ -18,18 +20,19 @@ interface Props {
   onOpen(missionId: string): void;
 }
 
-export function Plant({ missions, systems, save, mission, energized, run, onOpen }: Props) {
+export function Plant({ missions, systems, region, save, mission, energized, run, onOpen }: Props) {
   const events = run?.outcome.kind === "finished" ? run.outcome.result.events : [];
-  return (
-    <aside className="plant" aria-label="Outpost">
-      <Schematic
-        missions={missions}
-        systems={systems}
-        save={save}
-        currentSystem={mission.system}
-        energized={energized}
-        onOpen={onOpen}
-      />
+  const hasLiveScene =
+    mission.scene === "drone" ||
+    mission.scene === "sort" ||
+    mission.scene === "calls" ||
+    mission.scene === "grid" ||
+    mission.scene === "files" ||
+    mission.scene === "repo" ||
+    mission.scene === "work";
+
+  const liveScene = (
+    <>
       {mission.scene === "drone" && <DroneTelemetry events={events} />}
       {mission.scene === "sort" && <SortBars events={events} />}
       {mission.scene === "calls" && <CallTree events={events} />}
@@ -38,6 +41,32 @@ export function Plant({ missions, systems, save, mission, energized, run, onOpen
       {mission.scene === "repo" && <RepoScene />}
       {(mission.scene === "work" || mission.scene === "sort" || mission.scene === "calls" || mission.scene === "grid") && (
         <WorkMeter events={events} hideWhenEmpty={mission.scene !== "work"} />
+      )}
+    </>
+  );
+
+  const board = (
+    <Schematic
+      missions={missions}
+      systems={systems}
+      save={save}
+      act={region.act}
+      title={region.name}
+      currentSystem={mission.system}
+      energized={energized}
+      onOpen={onOpen}
+    />
+  );
+
+  return (
+    <aside className="plant" aria-label="Outpost">
+      {hasLiveScene ? (
+        <>
+          {liveScene}
+          {board}
+        </>
+      ) : (
+        board
       )}
       <StationLog missions={systems.flatMap((s) => s.missions)} save={save} />
     </aside>

@@ -110,7 +110,13 @@ export function Onboarding({ missions, save, onStart }: Props) {
       </form>
 
       <div className="onboarding-board" aria-hidden="true">
-        <Schematic missions={missions} systems={systemsIn(REGIONS[0].id)} save={save} />
+        <Schematic
+          missions={missions}
+          systems={systemsIn(REGIONS[0].id)}
+          save={save}
+          act={REGIONS[0].act}
+          title={REGIONS[0].name}
+        />
       </div>
     </main>
   );

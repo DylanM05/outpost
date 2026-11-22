@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type Dispatch } from "react";
 import { allMissions, missions, regionOf, reviewMissions, systemOf, systemsIn } from "../content";
-import { REGIONS } from "../content/regions";
+import { regionMeta } from "../content/regions";
 import { SUPPORT_LEVELS, type SupportLevel } from "../content/parse";
 import { comparePrediction } from "../game/predict";
 import {
@@ -8,22 +8,26 @@ import {
   easierStart,
   isRestored,
   nextMission,
-  regionEntry,
+  skillReport,
   SUPPORT_LABEL,
   supportChoice,
   supportFor,
   systemProgress,
 } from "../game/rules";
 import { parseSave, type Action, type Confidence, type Profile, type SaveData } from "../game/save";
+import { applyTheme, loadTheme, type ThemePreference } from "../game/theme";
 import { passedAll } from "../python/harness";
 import { PythonRunner, type RunnerStatus } from "../python/runner";
 import { relay } from "../relay/session";
+import { AtlasDialog } from "./AtlasDialog";
 import { Bench, type RunMode, type RunRecord } from "./Bench";
 import { Brief } from "./Brief";
-import { Plant } from "./Plant";
-import { maintenanceCalls } from "../game/maintenance";
+import { ControlRoomTour, hasSeenTour } from "./ControlRoomTour";
 import { Maintenance } from "./Maintenance";
+import { Plant } from "./Plant";
+import { MOD_KEY } from "./Results";
 import { SkillsDialog } from "./SkillsDialog";
+import { maintenanceCalls } from "../game/maintenance";
 
 // One interpreter for the whole session. Created lazily, outside React state,
 // so StrictMode's double render doesn't start a second worker.
@@ -31,6 +35,8 @@ let sharedRunner: PythonRunner | null = null;
 const getRunner = () => (sharedRunner ??= new PythonRunner());
 
 let runCount = 0;
+
+type MobilePane = "brief" | "bench" | "plant";
 
 interface Props {
   save: SaveData;
@@ -44,8 +50,20 @@ export function Game({ save, profile, dispatch }: Props) {
   const [lastRun, setLastRun] = useState<RunRecord | null>(null);
   const [energized, setEnergized] = useState<string | null>(null);
   const [skillsOpen, setSkillsOpen] = useState(false);
+  const [atlasOpen, setAtlasOpen] = useState(false);
+  const [tourOpen, setTourOpen] = useState(false);
+  const [mobilePane, setMobilePane] = useState<MobilePane>("brief");
   const [confidence, setConfidence] = useState<Confidence | null>(null);
   const [now, setNow] = useState(Date.now);
+
+  useEffect(() => {
+    if (Object.keys(save.completions).length === 0 && !hasSeenTour()) {
+      setTourOpen(true);
+    }
+    // Only auto-start on initial entry into the control room.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   useEffect(() => {
     const tick = () => setNow(Date.now());
     const timer = window.setInterval(tick, 30_000);
@@ -54,6 +72,18 @@ export function Game({ save, profile, dispatch }: Props) {
   }, []);
 
   useEffect(() => getRunner().subscribe(setRunnerStatus), []);
+
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
+        event.preventDefault();
+        setSkillsOpen(false);
+        setAtlasOpen((open) => !open);
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, []);
 
   const index = Math.max(0, missions.findIndex((m) => m.id === save.currentMission));
   const selected = allMissions.find((m) => m.id === save.currentMission);
@@ -68,11 +98,19 @@ export function Game({ save, profile, dispatch }: Props) {
     : systemOf(mission);
   const run = lastRun?.missionId === mission.id ? lastRun : null;
   const region = regionOf(mission);
+  const currentRegionMeta = regionMeta(region);
   const regionSystems = systemsIn(region);
   const online = regionSystems.filter((s) => systemProgress(missions, s, save).state === "online").length;
-  const assessment = missions.find((m) => m.assessment);
+  const assessment = missions.find((m) => m.region === region && m.assessment);
+  const provenSkills = skillReport([...missions, ...reviewMissions], save).filter(
+    (s) => s.evidence === "demonstrated" || s.evidence === "retained",
+  ).length;
 
-  const open = (missionId: string) => { setLastRun(null); setConfidence(null); dispatch({ type: "open", missionId }); };
+  const open = (missionId: string) => {
+    setLastRun(null);
+    setConfidence(null);
+    dispatch({ type: "open", missionId });
+  };
 
   async function execute(requested: RunMode) {
     if (busy || (mission.reviewSkill && !review?.active)) return;
@@ -137,30 +175,24 @@ export function Game({ save, profile, dispatch }: Props) {
       <header className="topbar">
         <div className="brand">
           <span className="wordmark">Outpost</span>
-          <nav className="regions" aria-label="Regions">
-            {REGIONS.map((r, i) => {
-              const entry = regionEntry(missions, r.id, save);
-              const here = r.id === region;
-              return (
-                <button
-                  key={r.id}
-                  className={`region${here ? " current" : ""}`}
-                  aria-current={here ? "page" : undefined}
-                  disabled={!entry}
-                  title={entry ? undefined : `Opens when ${REGIONS[i - 1]?.name ?? "the previous region"} is fully online`}
-                  onClick={() => entry && !here && open(entry.id)}
-                >
-                  {r.name}
-                </button>
-              );
-            })}
-          </nav>
-          <span className="online-count">
-            {online} of {regionSystems.length} systems online
-          </span>
+          <button
+            className="region-switcher"
+            data-tour="region-switcher"
+            onClick={() => setAtlasOpen(true)}
+            title="Open the Station Atlas to browse all 14 acts or search missions"
+            aria-haspopup="dialog"
+            aria-label={`Open station atlas. Currently in ${currentRegionMeta.act}, ${currentRegionMeta.name}, ${online} of ${regionSystems.length} systems online.`}
+          >
+            <span className="act-plate">{currentRegionMeta.act}</span>
+            <span className="region-switcher-name">{currentRegionMeta.name}</span>
+            <span className="region-switcher-count">
+              {online}/{regionSystems.length} online
+            </span>
+            <kbd>{MOD_KEY}+K</kbd>
+          </button>
         </div>
-        <div className="topbar-actions">
-          <label className="support-picker">
+        <div className="topbar-actions" data-tour="topbar-tools">
+          <label className="support-picker" title="Controls how much starter code and lesson guidance you get">
             <span>Support</span>
             <select
               value={mission.reviewSkill || mission.assessment ? "challenge" : (profile.fixedSupport ?? "adaptive")}
@@ -175,16 +207,55 @@ export function Game({ save, profile, dispatch }: Props) {
               ))}
             </select>
           </label>
-          <button className="quiet" onClick={() => setSkillsOpen(true)}>
+          <button
+            className="quiet skills-trigger"
+            title="Inspect skills you've practiced, demonstrated, or retained"
+            onClick={() => setSkillsOpen(true)}
+          >
             Skills
+            {provenSkills > 0 && <span className="topbar-badge">{provenSkills}</span>}
           </button>
-          <ProgressMenu save={save} dispatch={dispatch} />
+          <button
+            className="quiet"
+            title="Walk through the control room panels and shortcuts"
+            onClick={() => setTourOpen(true)}
+          >
+            Guide
+          </button>
+          <ProgressMenu save={save} dispatch={dispatch} onStartTour={() => setTourOpen(true)} />
         </div>
       </header>
 
       <Maintenance calls={calls} now={now} dispatch={dispatch} onOpen={() => setLastRun(null)} />
 
-      <main className="deck">
+      <div className="mobile-tabs" role="tablist" aria-label="Workspace panels">
+        <button
+          role="tab"
+          aria-selected={mobilePane === "brief"}
+          className={mobilePane === "brief" ? "active" : undefined}
+          onClick={() => setMobilePane("brief")}
+        >
+          Briefing
+        </button>
+        <button
+          role="tab"
+          aria-selected={mobilePane === "bench"}
+          className={mobilePane === "bench" ? "active" : undefined}
+          onClick={() => setMobilePane("bench")}
+        >
+          {mission.kind === "terminal" ? "Terminal" : mission.kind === "predict" ? "Predict" : "Code"}
+        </button>
+        <button
+          role="tab"
+          aria-selected={mobilePane === "plant"}
+          className={mobilePane === "plant" ? "active" : undefined}
+          onClick={() => setMobilePane("plant")}
+        >
+          Board ({online}/{regionSystems.length})
+        </button>
+      </div>
+
+      <main className="deck" data-mobile-pane={mobilePane}>
         <Brief
           key={mission.id}
           mission={mission}
@@ -195,6 +266,7 @@ export function Game({ save, profile, dispatch }: Props) {
           assessment={assessment}
           dispatch={dispatch}
           onOpen={open}
+          onOpenAtlas={() => setAtlasOpen(true)}
           onReplay={() => {
             dispatch({ type: "replay", missionId: mission.id });
             setLastRun(null);
@@ -226,22 +298,93 @@ export function Game({ save, profile, dispatch }: Props) {
         <Plant
           missions={missions}
           systems={regionSystems}
+          region={currentRegionMeta}
           save={save}
           mission={mission}
           energized={energized}
           run={run}
-          onOpen={open}
+          onOpen={(id) => {
+            open(id);
+            setMobilePane("brief");
+          }}
         />
       </main>
 
-      <SkillsDialog open={skillsOpen} missions={missions} reviews={reviewMissions} save={save} onClose={() => setSkillsOpen(false)} onOpen={open} />
+      <AtlasDialog
+        open={atlasOpen}
+        currentRegion={region}
+        currentMissionId={mission.id}
+        missions={missions}
+        save={save}
+        onClose={() => setAtlasOpen(false)}
+        onOpen={(id) => {
+          open(id);
+          setMobilePane("brief");
+        }}
+      />
+
+      <SkillsDialog
+        open={skillsOpen}
+        missions={missions}
+        reviews={reviewMissions}
+        save={save}
+        onClose={() => setSkillsOpen(false)}
+        onOpen={(id) => {
+          open(id);
+          setMobilePane("brief");
+        }}
+      />
+
+      <ControlRoomTour
+        open={tourOpen}
+        onClose={() => setTourOpen(false)}
+        onFocusPane={setMobilePane}
+      />
     </div>
   );
 }
 
-function ProgressMenu({ save, dispatch }: { save: SaveData; dispatch: Dispatch<Action> }) {
+const THEME_OPTIONS: { id: ThemePreference; label: string }[] = [
+  { id: "system", label: "Auto" },
+  { id: "light", label: "Day" },
+  { id: "dark", label: "Night" },
+];
+
+function ProgressMenu({
+  save,
+  dispatch,
+  onStartTour,
+}: {
+  save: SaveData;
+  dispatch: Dispatch<Action>;
+  onStartTour(): void;
+}) {
   const [message, setMessage] = useState<string | null>(null);
+  const [theme, setTheme] = useState<ThemePreference>(() => loadTheme());
+  const detailsRef = useRef<HTMLDetailsElement>(null);
   const fileInput = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    const closeOnOutside = (event: MouseEvent) => {
+      if (detailsRef.current?.open && !detailsRef.current.contains(event.target as Node)) {
+        detailsRef.current.open = false;
+      }
+    };
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape" && detailsRef.current?.open) detailsRef.current.open = false;
+    };
+    document.addEventListener("mousedown", closeOnOutside);
+    window.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.removeEventListener("mousedown", closeOnOutside);
+      window.removeEventListener("keydown", closeOnEscape);
+    };
+  }, []);
+
+  const chooseTheme = (next: ThemePreference) => {
+    setTheme(next);
+    applyTheme(next);
+  };
 
   const download = () => {
     const blob = new Blob([JSON.stringify(save, null, 2)], { type: "application/json" });
@@ -266,9 +409,26 @@ function ProgressMenu({ save, dispatch }: { save: SaveData; dispatch: Dispatch<A
   };
 
   return (
-    <details className="menu">
+    <details className="menu" ref={detailsRef}>
       <summary>Progress</summary>
       <div className="menu-panel">
+        <div className="menu-section">
+          <span className="menu-label">Display shift</span>
+          <div className="theme-toggle" role="group" aria-label="Display theme">
+            {THEME_OPTIONS.map((option) => (
+              <button
+                key={option.id}
+                type="button"
+                className={theme === option.id ? "active" : undefined}
+                aria-pressed={theme === option.id}
+                onClick={() => chooseTheme(option.id)}
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
+        </div>
+        <hr className="menu-divider" />
         <button onClick={download}>Download a backup</button>
         <button onClick={() => fileInput.current?.click()}>Restore from a backup</button>
         <input
@@ -282,7 +442,22 @@ function ProgressMenu({ save, dispatch }: { save: SaveData; dispatch: Dispatch<A
             e.target.value = "";
           }}
         />
-        <button onClick={() => dispatch({ type: "change-profile" })}>Change my experience answers</button>
+        <button
+          onClick={() => {
+            if (detailsRef.current) detailsRef.current.open = false;
+            onStartTour();
+          }}
+        >
+          Replay control room guide
+        </button>
+        <button
+          onClick={() => {
+            if (detailsRef.current) detailsRef.current.open = false;
+            dispatch({ type: "change-profile" });
+          }}
+        >
+          Change my experience answers
+        </button>
         <button
           className="danger"
           onClick={() => {
