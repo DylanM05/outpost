@@ -188,6 +188,18 @@ export const SKILLS = {
     name: "Hashing, key exchange, and AEAD",
     summary: "Use cryptographic hashes, Merkle trees, Diffie-Hellman key exchange, RSA modular math, Encrypt-then-MAC channels, and key rotation.",
   },
+  "http-protocol": {
+    name: "HTTP/1.1 wire protocol",
+    summary: "Frame raw TCP byte streams into lines, parse HTTP/1.1 request lines, headers, Content-Length and chunked bodies, and serialize compliant wire responses.",
+  },
+  concurrency: {
+    name: "Concurrency and coordination",
+    summary: "Schedule cooperative tasks, enforce budgets and cancellation, coordinate bounded channels and worker pools, and avoid races and deadlocks with ordered locks.",
+  },
+  crawling: {
+    name: "Web crawling and HTML parsing",
+    summary: "Normalize URLs, parse HTML links safely, enforce same-origin and page limits, and crawl graphs concurrently without loops.",
+  },
 } as const;
 
 export type SkillId = keyof typeof SKILLS;
