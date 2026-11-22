@@ -255,6 +255,36 @@ export function extractTopLevelNames(code: string): string[] {
   return [...names];
 }
 
+const REGEX_PREV_KEYWORDS = new Set([
+  "return",
+  "throw",
+  "case",
+  "in",
+  "of",
+  "typeof",
+  "void",
+  "delete",
+  "await",
+  "yield",
+  "new",
+  "else",
+  "do",
+]);
+
+function canStartRegex(code: string, slashIndex: number): boolean {
+  let p = slashIndex - 1;
+  while (p >= 0 && /\s/.test(code[p])) p--;
+  if (p < 0) return true;
+  const ch = code[p];
+  if ("([{,;:=!&|^~+-*%<>?".includes(ch)) return true;
+  if (/[A-Za-z0-9_$]/.test(ch)) {
+    let start = p;
+    while (start > 0 && /[A-Za-z0-9_$]/.test(code[start - 1])) start--;
+    return REGEX_PREV_KEYWORDS.has(code.slice(start, p + 1));
+  }
+  return false;
+}
+
 function stripStringsAndComments(code: string): string {
   const out: string[] = [];
   let i = 0;
@@ -281,6 +311,33 @@ function stripStringsAndComments(code: string): string {
       if (i < n) {
         out.push("  ");
         i += 2;
+      }
+      continue;
+    }
+    // Regex literal (e.g. /\//g, /'/g, /[&<>"']/g)
+    if (ch === "/" && canStartRegex(code, i)) {
+      out.push(" ");
+      i++;
+      let inClass = false;
+      while (i < n && code[i] !== "\n") {
+        if (code[i] === "\\" && i + 1 < n) {
+          out.push("  ");
+          i += 2;
+          continue;
+        }
+        if (code[i] === "[") inClass = true;
+        else if (code[i] === "]") inClass = false;
+        else if (code[i] === "/" && !inClass) {
+          out.push(" ");
+          i++;
+          while (i < n && /[a-z]/i.test(code[i])) {
+            out.push(" ");
+            i++;
+          }
+          break;
+        }
+        out.push(" ");
+        i++;
       }
       continue;
     }

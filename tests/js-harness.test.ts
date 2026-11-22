@@ -88,6 +88,17 @@ describe("JavaScript harness", () => {
     expect(res.stdout).toBe("sync 1\nsync 2\nmicro\nmacro\n");
   });
 
+  test("extracts top-level declarations after regex literals containing quotes or escaped slashes", () => {
+    const code = `
+      function clean(s) {
+        return s.replace(/\\//g, "_").replace(/'/g, "&#39;");
+      }
+      function afterRegex() { return 1; }
+      class AfterClass {}
+    `;
+    expect(extractTopLevelNames(code).sort()).toEqual(["AfterClass", "afterRegex", "clean"]);
+  });
+
   test("deepEqual handles floats, nested objects, arrays, Sets, and Maps", () => {
     expect(deepEqual(0.1 + 0.2, 0.3)).toBe(true);
     expect(deepEqual({ a: [1, 2], b: new Set([3, 4]) }, { b: new Set([4, 3]), a: [1, 2] })).toBe(true);

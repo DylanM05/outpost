@@ -360,6 +360,18 @@ export const SKILLS = {
     name: "JavaScript event loop and async/await",
     summary: "Trace microtask vs. macrotask scheduling, compose Promises with async/await and retries, and bound async concurrency pools.",
   },
+  "js-web-apis": {
+    name: "JavaScript HTTP, routing, and middleware",
+    summary: "Build URLs with URLSearchParams, wrap fetch with typed error handling, match Express-style route parameters, and compose async middleware chains.",
+  },
+  "js-validation-auth": {
+    name: "JavaScript runtime validation and caching",
+    summary: "Compose Zod-style runtime schema validators, encode/verify Base64URL JWT payloads, and cache API responses with LRU TTL eviction.",
+  },
+  "js-reactive-ui": {
+    name: "Reactive stores, signals, and rendering",
+    summary: "Build immutable state stores with selectors, reactive computed signals, XSS-safe virtual DOM HTML rendering, and client-side hash routers.",
+  },
 } as const;
 
 export type SkillId = keyof typeof SKILLS;
