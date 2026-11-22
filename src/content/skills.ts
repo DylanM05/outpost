@@ -288,6 +288,18 @@ export const SKILLS = {
     name: "Order books and settlement",
     summary: "Match bids and asks by strict price-time priority, handle partial fills and cancellations, compute spreads and VWAP, and settle trades atomically.",
   },
+  "spatial-geometry": {
+    name: "2D geometry and raycasting",
+    summary: "Compute vector projections and segment distances, detect AABB/circle collisions, rasterize Bresenham lines, and intersect 2D rays with segments and grids.",
+  },
+  "spatial-indexing": {
+    name: "Spatial hashing and Quadtrees",
+    summary: "Partition 2D space with uniform spatial hash grids and recursive Quadtrees for fast broad-phase range and radius queries.",
+  },
+  "simulation-pathfinding": {
+    name: "Fixed-step physics and A* pathfinding",
+    summary: "Advance bounded 2D bodies with deterministic fixed timesteps, compute A* heuristic paths around obstacles, and steer agents with collision avoidance.",
+  },
 } as const;
 
 export type SkillId = keyof typeof SKILLS;
