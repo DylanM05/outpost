@@ -30,14 +30,14 @@ export function isRestored(save: SaveData, missionId: string): boolean {
 
 // A finished mission stays open even if a mission added before it later
 // hasn't been played yet.
-export function isUnlocked(missions: Mission[], save: SaveData, index: number): boolean {
-  if (index <= 0 || canSkipAhead(save.profile)) return true;
+export function isUnlocked(missions: Mission[], save: SaveData, index: number, unlockAll = false): boolean {
+  if (unlockAll || index <= 0 || canSkipAhead(save.profile)) return true;
   return isRestored(save, missions[index].id) || isRestored(save, missions[index - 1].id);
 }
 
 export type SystemState = "online" | "underway" | "ready" | "locked";
 
-export function systemProgress(missions: Mission[], system: System, save: SaveData) {
+export function systemProgress(missions: Mission[], system: System, save: SaveData, unlockAll = false) {
   const done = system.missions.filter((m) => isRestored(save, m.id)).length;
   const total = system.missions.length;
   const state: SystemState =
@@ -45,7 +45,7 @@ export function systemProgress(missions: Mission[], system: System, save: SaveDa
       ? "online"
       : done > 0
         ? "underway"
-        : isUnlocked(missions, save, missions.indexOf(system.missions[0]))
+        : isUnlocked(missions, save, missions.indexOf(system.missions[0]), unlockAll)
           ? "ready"
           : "locked";
   return { done, total, state };
@@ -53,18 +53,18 @@ export function systemProgress(missions: Mission[], system: System, save: SaveDa
 
 // Where selecting a region takes you: its first open, unfinished mission, or
 // its first mission once everything is done. Null while the region is locked.
-export function regionEntry(missions: Mission[], region: string, save: SaveData): Mission | null {
+export function regionEntry(missions: Mission[], region: string, save: SaveData, unlockAll = false): Mission | null {
   const inRegion = missions.filter((m) => m.region === region);
-  const open = (m: Mission) => isUnlocked(missions, save, missions.indexOf(m));
+  const open = (m: Mission) => isUnlocked(missions, save, missions.indexOf(m), unlockAll);
   if (inRegion.length === 0 || !open(inRegion[0])) return null;
   return inRegion.find((m) => !isRestored(save, m.id) && open(m)) ?? inRegion[0];
 }
 
 // Where selecting a system takes you: its first open, unfinished mission, or
 // its first mission once everything is done.
-export function entryMission(missions: Mission[], system: System, save: SaveData): Mission {
+export function entryMission(missions: Mission[], system: System, save: SaveData, unlockAll = false): Mission {
   return (
-    system.missions.find((m) => !isRestored(save, m.id) && isUnlocked(missions, save, missions.indexOf(m))) ??
+    system.missions.find((m) => !isRestored(save, m.id) && isUnlocked(missions, save, missions.indexOf(m), unlockAll)) ??
     system.missions[0]
   );
 }
@@ -174,10 +174,10 @@ export function hintsUnlocked(mission: Mission, save: SaveData): boolean {
 
 // The next mission worth playing after `from`: the first unlocked one that
 // isn't restored yet, wrapping around to earlier gaps.
-export function nextMission(missions: Mission[], save: SaveData, from: number): Mission | null {
+export function nextMission(missions: Mission[], save: SaveData, from: number, unlockAll = false): Mission | null {
   for (let step = 1; step <= missions.length; step++) {
     const index = (from + step) % missions.length;
-    if (!isRestored(save, missions[index].id) && isUnlocked(missions, save, index)) return missions[index];
+    if (!isRestored(save, missions[index].id) && isUnlocked(missions, save, index, unlockAll)) return missions[index];
   }
   return null;
 }

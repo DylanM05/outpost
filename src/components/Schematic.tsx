@@ -61,10 +61,11 @@ interface Props {
   currentSystem?: string;
   // The system that came fully online most recently; its wire and lamp animate once.
   energized?: string | null;
+  unlockAll?: boolean;
   onOpen?: (missionId: string) => void;
 }
 
-export function Schematic({ missions, systems, save, act, title, currentSystem, energized, onOpen }: Props) {
+export function Schematic({ missions, systems, save, act, title, currentSystem, energized, unlockAll = false, onOpen }: Props) {
   const figure = useRef<HTMLElement>(null);
   const [perRow, setPerRow] = useState(5);
 
@@ -132,10 +133,10 @@ export function Schematic({ missions, systems, save, act, title, currentSystem, 
 
         {systems.map((system, index) => {
           const { x, y } = position(index);
-          const { done, total, state } = systemProgress(missions, system, save);
+          const { done, total, state } = systemProgress(missions, system, save, unlockAll);
           const current = system.name === currentSystem;
           const openable = onOpen !== undefined && state !== "locked";
-          const target = entryMission(missions, system, save).id;
+          const target = entryMission(missions, system, save, unlockAll).id;
           const plateWidth = system.name.length * 7.4 + 18;
           const classes = ["node", state, current && "current", energized === system.name && "energize"];
           return (

@@ -118,3 +118,22 @@ test("ControlRoomTour renders step guidance and Game exposes Guide trigger and d
   expect(tourHtml).toContain(TOUR_STEPS[0].title);
   expect(tourHtml).toContain("Skip tour");
 });
+
+
+test("debug mode unlocks every act and renders the Debug control strip with act jumper and helpers", () => {
+  const save = emptySave();
+  save.profile = { experience: "new", background: [], support: "guided" };
+  save.currentMission = missions[0].id;
+
+  const normalHtml = renderToStaticMarkup(<Game save={save} profile={save.profile} dispatch={() => {}} initialDebugMode={false} />);
+  expect(normalHtml).not.toContain('aria-label="Debug controls"');
+  expect(normalHtml).toContain("Debug mode: Off");
+
+  const debugHtml = renderToStaticMarkup(<Game save={save} profile={save.profile} dispatch={() => {}} initialDebugMode={true} />);
+  expect(debugHtml).toContain('aria-label="Debug controls"');
+  expect(debugHtml).toContain("Debug mode: On");
+  expect(debugHtml).toContain("Fill solution");
+  expect(debugHtml).toContain("Pass mission");
+  expect(debugHtml).toContain("Complete act");
+  expect(debugHtml).toContain("Act XV: The signal tower");
+});

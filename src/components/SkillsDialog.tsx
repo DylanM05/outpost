@@ -37,11 +37,12 @@ interface Props {
   missions: Mission[];
   reviews: Mission[];
   save: SaveData;
+  unlockAll?: boolean;
   onClose(): void;
   onOpen(missionId: string): void;
 }
 
-export function SkillsDialog({ open, missions, reviews, save, onClose, onOpen }: Props) {
+export function SkillsDialog({ open, missions, reviews, save, unlockAll = false, onClose, onOpen }: Props) {
   const dialog = useRef<HTMLDialogElement>(null);
   const [filter, setFilter] = useState<Filter>("all");
   const [query, setQuery] = useState("");
@@ -184,7 +185,7 @@ export function SkillsDialog({ open, missions, reviews, save, onClose, onOpen }:
                       return (
                         <span key={mission.id}>
                           {i > 0 && ", "}
-                          {isUnlocked(missions, save, index) ? (
+                          {isUnlocked(missions, save, index, unlockAll) ? (
                             <button
                               className="link"
                               onClick={() => {

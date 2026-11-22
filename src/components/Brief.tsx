@@ -26,6 +26,7 @@ interface Props {
   save: SaveData;
   support: SupportChoice;
   assessment: Mission | undefined;
+  unlockAll?: boolean;
   dispatch: Dispatch<Action>;
   onOpen(missionId: string): void;
   onOpenAtlas(): void;
@@ -48,6 +49,7 @@ export function Brief({
   save,
   support: choice,
   assessment,
+  unlockAll = false,
   dispatch,
   onOpen,
   onOpenAtlas,
@@ -56,7 +58,7 @@ export function Brief({
   if (mission.reviewSkill) return <MaintenanceBrief mission={mission} save={save} dispatch={dispatch} onOpen={onOpen} missions={missions} />;
   const support = choice.level;
   const restored = isRestored(save, mission.id);
-  const progress = systemProgress(missions, system, save);
+  const progress = systemProgress(missions, system, save, unlockAll);
   const revealed = Math.min(save.hintsRevealed[mission.id] ?? 0, mission.hints.length);
   const submits = save.submits[mission.id] ?? 0;
   const nothingRestoredYet = Object.keys(save.completions).length === 0;
@@ -69,9 +71,9 @@ export function Brief({
   const regionMissions = missions.filter((m) => m.region === mission.region);
   const positionInRegion = regionMissions.indexOf(mission) + 1;
   const globalIndex = missions.indexOf(mission);
-  const prevMission = globalIndex > 0 && isUnlocked(missions, save, globalIndex - 1) ? missions[globalIndex - 1] : null;
+  const prevMission = globalIndex > 0 && isUnlocked(missions, save, globalIndex - 1, unlockAll) ? missions[globalIndex - 1] : null;
   const nextStep =
-    globalIndex >= 0 && globalIndex + 1 < missions.length && isUnlocked(missions, save, globalIndex + 1)
+    globalIndex >= 0 && globalIndex + 1 < missions.length && isUnlocked(missions, save, globalIndex + 1, unlockAll)
       ? missions[globalIndex + 1]
       : null;
 
@@ -104,7 +106,7 @@ export function Brief({
           {system.missions.map((step) => {
             const state = isRestored(save, step.id)
               ? "done"
-              : isUnlocked(missions, save, missions.indexOf(step))
+              : isUnlocked(missions, save, missions.indexOf(step), unlockAll)
                 ? "open"
                 : "locked";
             const here = step === mission;
