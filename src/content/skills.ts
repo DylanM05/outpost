@@ -300,6 +300,18 @@ export const SKILLS = {
     name: "Fixed-step physics and A* pathfinding",
     summary: "Advance bounded 2D bodies with deterministic fixed timesteps, compute A* heuristic paths around obstacles, and steer agents with collision avoidance.",
   },
+  "object-storage": {
+    name: "Object storage and signed uploads",
+    summary: "Deduplicate content-addressed blobs, assemble multipart uploads, issue and verify time-limited HMAC presigned URLs, and apply lifecycle tiering rules.",
+  },
+  "http-streaming": {
+    name: "Byte-range streaming and media",
+    summary: "Parse HTTP Range headers into 206/416 responses, sniff MIME types safely from magic bytes, and generate adaptive HLS playlists.",
+  },
+  "cdn-caching": {
+    name: "CDN edge caching and invalidation",
+    summary: "Enforce Cache-Control freshness and s-maxage precedence, invalidate objects by surrogate tags, and coalesce concurrent misses with an origin shield.",
+  },
 } as const;
 
 export type SkillId = keyof typeof SKILLS;

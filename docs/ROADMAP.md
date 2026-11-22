@@ -68,6 +68,7 @@ Each act is a region of the world, with a guided build in the middle and an inde
 | XVIII | The iron room | Round-Robin, SRTF & MLFQ scheduling, Banker's safety, priority inheritance, two-level page tables, Clock eviction, Copy-on-Write forks, block bitmaps, Unix inodes & hard links, binary buddy allocators, POSIX symlink resolution | Page vault & inode rack | Build an end-to-end mini OS kernel *(built: 13 missions)* |
 | XIX | The ledger house | Integer minor-unit math, largest-remainder penny splits, double-entry journals, idempotent transfers, OCC event stores, snapshot hydration, compensating sagas, settlement reconciliation, price-time limit order books, lazy cancel & VWAP | Event spine & matching floor | Build an end-to-end clearing house *(built: 12 missions)* |
 | XX | The observatory | Fixed-timestep simulation, 2D vectors & segment distance, AABB/circle collisions, Bresenham lines, 2D raycasting & line-of-sight, spatial hash grids, Quadtrees, elastic physics, A* pathfinding, steering avoidance | Spatial vault & navigation core | Build an end-to-end 2D outpost simulator *(built: 12 missions)* |
+| XXI | The media depot | Shared `Cache-Control`, SHA-256 blob deduplication, multipart uploads, HMAC presigned URLs, HTTP `206` byte ranges, magic-byte MIME sniffing, LRU TTL/SWR edge cache, surrogate keys, HLS playlists, origin shield, lifecycle tiering | Edge cache & media rail | Build an end-to-end CDN edge & object origin *(built: 12 missions)* |
 
 The algorithms regions are planned in detail in [ALGORITHMS.md](ALGORITHMS.md). Algorithms I comes second because it builds directly on Act I and runs in the browser on the existing engine. Boot.dev moves learners to a local setup straight after Python, so swapping Acts II and III is the alternative if getting off the browser early matters more.
 
@@ -77,14 +78,14 @@ Learners still need to work on their own computers eventually. A later chapter c
 
 ## Learning loop now implemented
 
-Act I has 39 campaign missions, Act II 29, Act III 43, Act IV 56, Act V 35, Act VI 34, Act VII 31, Act VIII 20, Act IX 8, Act X 21, Act XI 20, Act XII 16, Act XIII 17, Act XIV 15, Act XV 15, Act XVI 14, Act XVII 13, Act XVIII 13, Act XIX 12, and Act XX 12 (463 campaign missions total across twenty acts), plus 183 maintenance calls: three variants each across all 61 browser-code skills spanning Acts I, II, and V–XX. Calls are scheduled after gaps, rotate tasks, and add retention evidence without blocking campaign progress.
+Act I has 39 campaign missions, Act II 29, Act III 43, Act IV 56, Act V 35, Act VI 34, Act VII 31, Act VIII 20, Act IX 8, Act X 21, Act XI 20, Act XII 16, Act XIII 17, Act XIV 15, Act XV 15, Act XVI 14, Act XVII 13, Act XVIII 13, Act XIX 12, Act XX 12, and Act XXI 12 (475 campaign missions total across twenty-one acts), plus 192 maintenance calls: three variants each across all 64 browser-code skills spanning Acts I, II, and V–XXI. Calls are scheduled after gaps, rotate tasks, and add retention evidence without blocking campaign progress.
 
 Support adapts per skill: onboarding sets the starting level, a clean solve gives the next mission for that skill less scaffolding, and a struggle gives it more. Stuck players are offered a more complete starting point. Optional pre-submit confidence ratings (`Unsure` / `Fairly sure` / `Certain`) on Standard, Challenge, predict, and maintenance submissions feed a private Calibration panel in Skills without ever acting as a grade. Existing saves remain compatible. See [LEARNING.md](LEARNING.md) for the exact rules and their limitations.
 
 ## Next steps
 
 1. **Playtest the learning loop** with three to five beginners, including an unfamiliar problem about a week later. Use the result to revise the content, the schedule, and the support thresholds.
-2. **Extend maintenance to terminal skills (optional).** All 61 major browser-code skills across Acts I, II, and V–XX now have 3-variant maintenance pools (183 calls total). Terminal skills (Acts III–IV Linux/Git and Act V pytest) can follow if playtesting shows they benefit from timed return calls.
+2. **Extend maintenance to terminal skills (optional).** All 64 major browser-code skills across Acts I, II, and V–XXI now have 3-variant maintenance pools (192 calls total). Terminal skills (Acts III–IV Linux/Git and Act V pytest) can follow if playtesting shows they benefit from timed return calls.
 4. **Add deliberate modification missions** between reading code and creating programs. Two maintenance variants already ask players to change existing code.
 5. **Playtest confidence calibration** — optional pre-submit confidence ratings and the private Calibration summary in Skills are now implemented; use playtests to verify learners find them helpful rather than distracting.
 6. **Extend maintenance coverage** to the remaining skills, with varied tasks that assess transfer instead of answer recall.
