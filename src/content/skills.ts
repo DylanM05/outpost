@@ -372,6 +372,18 @@ export const SKILLS = {
     name: "Reactive stores, signals, and rendering",
     summary: "Build immutable state stores with selectors, reactive computed signals, XSS-safe virtual DOM HTML rendering, and client-side hash routers.",
   },
+  "js-streams-buffers": {
+    name: "JavaScript binary buffers and event streams",
+    summary: "Encode and decode binary frames with ArrayBuffer, DataView, and Uint8Array, build safe EventEmitters, and pipe async generator streams.",
+  },
+  "js-testing-tooling": {
+    name: "JavaScript test runners, mocks, and module loaders",
+    summary: "Build mini describe/it test runners, method spies and mocks, CommonJS circular-safe module loaders, and topological dependency bundlers.",
+  },
+  "js-patterns-perf": {
+    name: "JavaScript Proxies and priority schedulers",
+    summary: "Intercept object operations with ES6 Proxy traps and validation guards, freeze deep structures, and schedule concurrent tasks by priority.",
+  },
 } as const;
 
 export type SkillId = keyof typeof SKILLS;
