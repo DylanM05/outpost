@@ -384,6 +384,30 @@ export const SKILLS = {
     name: "JavaScript Proxies and priority schedulers",
     summary: "Intercept object operations with ES6 Proxy traps and validation guards, freeze deep structures, and schedule concurrent tasks by priority.",
   },
+  "sql-queries": {
+    name: "SQL SELECT, filtering, and expressions",
+    summary: "Project and alias columns, filter rows with WHERE, IN, BETWEEN, LIKE, and IS NULL, and transform values with CASE and COALESCE.",
+  },
+  "sql-aggregations": {
+    name: "SQL grouping and aggregations",
+    summary: "Summarize rows with GROUP BY, COUNT, SUM, AVG, conditional CASE sums, and post-aggregation HAVING filters while handling NULLs accurately.",
+  },
+  "sql-joins": {
+    name: "SQL joins, subqueries, and set operations",
+    summary: "Combine normalized tables with INNER, LEFT, anti-, and self-joins, write correlated EXISTS subqueries, and diff datasets with UNION/INTERSECT/EXCEPT.",
+  },
+  "sql-windows-ctes": {
+    name: "SQL window functions and recursive CTEs",
+    summary: "Rank groups with ROW_NUMBER/RANK/DENSE_RANK, compute running totals and LAG deltas, structure multi-stage WITH pipelines, and traverse graphs with WITH RECURSIVE.",
+  },
+  "sql-schema-dml": {
+    name: "SQL schemas, constraints, upserts, and triggers",
+    summary: "Enforce relational integrity with PRIMARY/FOREIGN KEY, UNIQUE, and CHECK constraints, automate audits with views and triggers, and write ON CONFLICT upserts.",
+  },
+  "sql-indexes-transactions": {
+    name: "SQL query plans, covering indexes, and JSON",
+    summary: "Read EXPLAIN QUERY PLAN output, design composite and partial covering indexes for equality-before-range seeks, and query JSON documents with json_extract and json_each.",
+  },
 } as const;
 
 export type SkillId = keyof typeof SKILLS;

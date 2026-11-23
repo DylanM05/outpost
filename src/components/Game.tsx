@@ -200,13 +200,21 @@ export function Game({ save, profile, dispatch, initialDebugMode }: Props) {
     const prediction = predicting ? code : undefined;
     const chosenConfidence = mode === "submit" ? confidence : null;
     setBusy(mode);
-    const runner = target.language === "javascript" ? getJsRunner() : getRunner();
     const outcome =
       target.kind === "terminal"
         ? await relay.check(target, mode, code)
-        : predicting
-          ? await runner.run(target.program, "")
-          : await runner.run(code, target.checks, mode === "submit" ? target.hiddenChecks : "");
+        : target.language === "javascript"
+          ? predicting
+            ? await getJsRunner().run(target.program, "")
+            : await getJsRunner().run(code, target.checks, mode === "submit" ? target.hiddenChecks : "")
+          : predicting
+            ? await getRunner().run(target.program, "", "", target.language === "sql" ? { mode: "sql", setup: target.setup } : undefined)
+            : await getRunner().run(
+                code,
+                target.checks,
+                mode === "submit" ? target.hiddenChecks : "",
+                target.language === "sql" ? { mode: "sql", setup: target.setup } : undefined,
+              );
     setBusy(null);
     setLastRun({ missionId: target.id, mode, outcome, key: ++runCount, prediction });
     if (mode !== "submit") return;

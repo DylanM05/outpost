@@ -66,13 +66,14 @@ export function Onboarding({ missions, save, onStart }: Props) {
       <form className="onboarding-form" onSubmit={submit}>
         <h1>Kestrel Ridge has been dark for 211 days.</h1>
         <p className="lede">
-          You're the outpost's new maintenance engineer. Every system here runs on Python or JavaScript, and every one of
-          them is broken. You repair them by writing real code — and you can switch between language paths at any time.
+          You're the outpost's new maintenance engineer. Every system here runs on Python, JavaScript, or SQL, and every
+          one of them is broken. You repair them by writing real code — and you can switch between language paths at any
+          time.
         </p>
 
         <fieldset>
           <legend>Which path do you want to start on?</legend>
-          <p className="field-note">Both paths start unlocked from day one — switch back and forth anytime from the top bar.</p>
+          <p className="field-note">All three paths start unlocked from day one — switch back and forth anytime from the top bar.</p>
           <div className="chips">
             {TRACKS.map((option) => (
               <label key={option.id} className="chip">

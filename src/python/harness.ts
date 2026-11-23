@@ -13,6 +13,8 @@ export const HARNESS_PY = String.raw`
 import io
 import json
 import math
+import re
+import sqlite3
 import sys
 import tokenize
 import traceback
@@ -295,7 +297,7 @@ def _record_calls(fn, name):
     return recorder, log
 
 
-def _run_checks(user_code, check_code, hidden_code, namespace, program_output, result):
+def _run_checks(user_code, check_code, hidden_code, namespace, program_output, result, extra_scope=None):
     checks = result["checks"]
     events = result["events"]
     state = {"hidden": False}
@@ -545,6 +547,8 @@ def _run_checks(user_code, check_code, hidden_code, namespace, program_output, r
         "safe": safe,
         "emit": emit,
     }
+    if extra_scope:
+        scope.update(extra_scope)
     for code, hidden, filename in ((check_code, False, "checks.py"), (hidden_code, True, "hidden_checks.py")):
         if not code.strip():
             continue
@@ -582,6 +586,218 @@ def run_mission(user_code, check_code, hidden_code=""):
             _run_checks(user_code, check_code, hidden_code, namespace, result["stdout"], result)
     finally:
         sys.stdout = real_stdout
+    return json.dumps(result)
+
+
+def _sql_strip_comments_and_strings(sql_text, keep_strings=False):
+    out = []
+    i = 0
+    n = len(sql_text)
+    while i < n:
+        ch = sql_text[i]
+        nxt = sql_text[i + 1] if i + 1 < n else ""
+        if ch == "-" and nxt == "-":
+            i += 2
+            while i < n and sql_text[i] != "\n":
+                i += 1
+            out.append(" ")
+            continue
+        if ch == "/" and nxt == "*":
+            i += 2
+            while i < n and not (sql_text[i] == "*" and (i + 1 < n and sql_text[i + 1] == "/")):
+                i += 1
+            i += 2
+            out.append(" ")
+            continue
+        if ch in ("'", '"'):
+            quote = ch
+            start = i
+            i += 1
+            while i < n:
+                if sql_text[i] == quote:
+                    if i + 1 < n and sql_text[i + 1] == quote:
+                        i += 2
+                        continue
+                    i += 1
+                    break
+                i += 1
+            out.append(sql_text[start:i] if keep_strings else " ")
+            continue
+        out.append(ch)
+        i += 1
+    return "".join(out)
+
+
+def _split_sql_statements(sql_text):
+    statements = []
+    buf = []
+    i = 0
+    n = len(sql_text)
+    in_trigger = False
+    block_depth = 0
+    case_depth = 0
+    word_tokens = []
+
+    while i < n:
+        ch = sql_text[i]
+        nxt = sql_text[i + 1] if i + 1 < n else ""
+        if ch == "-" and nxt == "-":
+            start = i
+            i += 2
+            while i < n and sql_text[i] != "\n":
+                i += 1
+            buf.append(sql_text[start:i])
+            continue
+        if ch == "/" and nxt == "*":
+            start = i
+            i += 2
+            while i < n and not (sql_text[i] == "*" and (i + 1 < n and sql_text[i + 1] == "/")):
+                i += 1
+            i = min(n, i + 2)
+            buf.append(sql_text[start:i])
+            continue
+        if ch in ("'", '"', chr(96)):
+            quote = ch
+            start = i
+            i += 1
+            while i < n:
+                if sql_text[i] == quote:
+                    if i + 1 < n and sql_text[i + 1] == quote:
+                        i += 2
+                        continue
+                    i += 1
+                    break
+                i += 1
+            buf.append(sql_text[start:i])
+            continue
+        if ch.isalpha() or ch == "_":
+            start = i
+            while i < n and (sql_text[i].isalnum() or sql_text[i] == "_"):
+                i += 1
+            word = sql_text[start:i]
+            upper = word.upper()
+            buf.append(word)
+            word_tokens.append(upper)
+            if not in_trigger and len(word_tokens) <= 3 and word_tokens[0] == "CREATE" and upper == "TRIGGER":
+                in_trigger = True
+            elif in_trigger:
+                if upper == "BEGIN":
+                    block_depth += 1
+                elif upper == "CASE":
+                    case_depth += 1
+                elif upper == "END":
+                    if case_depth > 0:
+                        case_depth -= 1
+                    elif block_depth > 0:
+                        block_depth -= 1
+            continue
+        if ch == ";" and block_depth == 0:
+            buf.append(ch)
+            stmt = "".join(buf).strip()
+            if _sql_strip_comments_and_strings(stmt, keep_strings=True).strip("; \t\r\n"):
+                statements.append(stmt)
+            buf = []
+            in_trigger = False
+            case_depth = 0
+            word_tokens = []
+            i += 1
+            continue
+        buf.append(ch)
+        i += 1
+
+    tail = "".join(buf).strip()
+    if _sql_strip_comments_and_strings(tail, keep_strings=True).strip("; \t\r\n"):
+        statements.append(tail)
+    return statements
+
+
+def _format_sql_table(columns, rows):
+    if not columns:
+        return ""
+    lines = [" | ".join(str(c) for c in columns)]
+    for row in rows:
+        lines.append(" | ".join("NULL" if v is None else str(v) for v in row))
+    return "\n".join(lines) + "\n"
+
+
+def _exec_sql_script(conn, sql_text):
+    last_columns = []
+    last_rows = []
+    outputs = []
+    for stmt in _split_sql_statements(sql_text):
+        cur = conn.execute(stmt)
+        if cur.description is not None:
+            last_columns = [col[0] for col in cur.description]
+            last_rows = [list(row) for row in cur.fetchall()]
+            outputs.append(_format_sql_table(last_columns, last_rows))
+    return last_columns, last_rows, "\n".join(o.rstrip("\n") for o in outputs if o) + ("\n" if outputs else "")
+
+
+def run_sql_mission(user_sql, setup_sql, check_code, hidden_code=""):
+    result = {"stdout": "", "stdoutTruncated": False, "error": None, "checks": [], "events": []}
+    conn = sqlite3.connect(":memory:")
+    conn.execute("PRAGMA foreign_keys = ON")
+    real_stdout = sys.stdout
+    try:
+        if setup_sql and setup_sql.strip():
+            conn.executescript(setup_sql)
+            conn.commit()
+        last_columns = []
+        last_rows = []
+        output_text = ""
+        try:
+            last_columns, last_rows, output_text = _exec_sql_script(conn, user_sql)
+            conn.commit()
+        except sqlite3.Error as exc:
+            result["error"] = {"phase": "runtime", "type": type(exc).__name__, "message": str(exc), "line": None}
+
+        if len(output_text) > _OUTPUT_LIMIT:
+            result["stdout"] = output_text[:_OUTPUT_LIMIT]
+            result["stdoutTruncated"] = True
+        else:
+            result["stdout"] = output_text
+
+        if result["error"] is None:
+            sys.stdout = _CappedOutput()
+            stripped_upper = _sql_strip_comments_and_strings(user_sql).upper()
+
+            def query(sql, params=()):
+                cur = conn.execute(sql, params)
+                return [list(r) for r in cur.fetchall()]
+
+            def query_dicts(sql, params=()):
+                cur = conn.execute(sql, params)
+                cols = [c[0] for c in (cur.description or [])]
+                return [dict(zip(cols, r)) for r in cur.fetchall()]
+
+            def run_user_sql():
+                _, new_rows, _ = _exec_sql_script(conn, user_sql)
+                conn.commit()
+                return new_rows
+
+            def sql_uses(*keywords):
+                for kw in keywords:
+                    token = str(kw).upper()
+                    if re.search(r"\b" + re.escape(token) + r"\b", stripped_upper):
+                        return True
+                return False
+
+            extra_scope = {
+                "conn": conn,
+                "columns": last_columns,
+                "rows": last_rows,
+                "dicts": [dict(zip(last_columns, r)) for r in last_rows],
+                "row_count": len(last_rows),
+                "query": query,
+                "query_dicts": query_dicts,
+                "run_user_sql": run_user_sql,
+                "sql_uses": sql_uses,
+                "sqlite3": sqlite3,
+            }
+            _run_checks(user_sql, check_code, hidden_code, {}, result["stdout"], result, extra_scope=extra_scope)
+    finally:
+        sys.stdout = real_stdout
+        conn.close()
     return json.dumps(result)
 `;
 

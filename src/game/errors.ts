@@ -34,7 +34,23 @@ const JS_EXPLANATIONS: Record<string, string> = {
   URIError: "A URI encoding or decoding function received malformed characters.",
 };
 
+const SQL_EXPLANATIONS: Record<string, string> = {
+  OperationalError:
+    "SQLite couldn't run this query. Check table and column names, commas between columns, keywords, and matching quotes or parentheses.",
+  IntegrityError:
+    "A table constraint failed — such as a duplicate PRIMARY KEY or UNIQUE value, a missing NOT NULL value, a failed CHECK constraint, or a FOREIGN KEY that doesn't match a parent row.",
+  ProgrammingError:
+    "SQLite couldn't bind or execute the statement as written. Check statement syntax and semicolon separators.",
+  DataError: "A value had the wrong type or range for this SQL operation.",
+  InterfaceError: "A parameter or value passed to SQLite wasn't a supported SQL type.",
+};
+
 export function explainError(type: string, language: Language = "python"): string {
-  const table = language === "javascript" ? JS_EXPLANATIONS : PYTHON_EXPLANATIONS;
+  const table =
+    language === "javascript"
+      ? JS_EXPLANATIONS
+      : language === "sql"
+        ? SQL_EXPLANATIONS
+        : PYTHON_EXPLANATIONS;
   return table[type] ?? "Read the message above, then look at the line it points to.";
 }

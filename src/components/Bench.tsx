@@ -67,10 +67,22 @@ export function Bench(props: BenchProps) {
   }
 }
 
+function fileNameFor(language: Mission["language"]): string {
+  if (language === "javascript") return "main.js";
+  if (language === "sql") return "query.sql";
+  return "main.py";
+}
+
+function runtimeNameFor(language: Mission["language"]): string {
+  if (language === "javascript") return "JavaScript";
+  if (language === "sql") return "SQLite";
+  return "Python";
+}
+
 function CodeBench(props: BenchProps) {
   const { mission, run, busy } = props;
   const error = run?.outcome.kind === "finished" ? run.outcome.result.error : null;
-  const fileName = mission.language === "javascript" ? "main.js" : "main.py";
+  const fileName = fileNameFor(mission.language);
 
   return (
     <section className="bench" aria-label="Code">
@@ -88,6 +100,13 @@ function CodeBench(props: BenchProps) {
           Reset code
         </button>
       </div>
+
+      {mission.language === "sql" && mission.setup.trim() && (
+        <details className="sql-schema">
+          <summary>Database schema &amp; seed data</summary>
+          <pre>{mission.setup.trim()}</pre>
+        </details>
+      )}
 
       <CodeEditor
         docKey={mission.id}
@@ -134,7 +153,11 @@ function CodeBench(props: BenchProps) {
 function PredictBench(props: BenchProps) {
   const { mission, busy } = props;
   const check = () => props.onExecute("submit");
-  const fileName = mission.language === "javascript" ? "main.js" : "main.py";
+  const fileName = fileNameFor(mission.language);
+  const displayProgram =
+    mission.language === "sql" && mission.setup.trim()
+      ? `${mission.setup.trim()}\n\n-- Query\n${mission.program}`
+      : mission.program;
 
   return (
     <section className="bench" aria-label="Program and prediction">
@@ -147,7 +170,7 @@ function PredictBench(props: BenchProps) {
         className="compact"
         readOnly
         docKey={mission.id}
-        value={mission.program}
+        value={displayProgram}
         language={mission.language}
         label={`Program for ${mission.title}, read only`}
         errorLine={null}
@@ -217,7 +240,7 @@ function supportNote({ level, source }: SupportChoice): string {
 }
 
 function RunnerNote({ status, busy, language }: { status: RunnerStatus; busy: RunMode | null; language: Mission["language"] }) {
-  const runtime = language === "javascript" ? "JavaScript" : "Python";
+  const runtime = runtimeNameFor(language);
   if (status === "loading" && busy === null) return <span className="runner-state">{runtime} is starting…</span>;
   if (status === "unavailable") {
     return <span className="runner-state fault">{runtime} couldn't start. Reload the page to try again.</span>;
@@ -226,7 +249,7 @@ function RunnerNote({ status, busy, language }: { status: RunnerStatus; busy: Ru
 }
 
 function CodeResults({ mission, run, busy, runnerStatus, systemOnline, next, onOpen, easierStart, onEasierStart }: BenchProps) {
-  const runtime = mission.language === "javascript" ? "JavaScript" : "Python";
+  const runtime = runtimeNameFor(mission.language);
   if (busy) {
     return (
       <p className="status">
@@ -270,7 +293,7 @@ function CodeResults({ mission, run, busy, runnerStatus, systemOnline, next, onO
 }
 
 function PredictResults({ mission, run, busy, runnerStatus, systemOnline, next, onOpen }: BenchProps) {
-  const runtime = mission.language === "javascript" ? "JavaScript" : "Python";
+  const runtime = runtimeNameFor(mission.language);
   if (busy) {
     return (
       <p className="status">

@@ -1,7 +1,7 @@
 // Tracks group regions into independent learning paths. The first region of
 // every track is open from day one, so players can start on either path or
 // jump back and forth freely without losing their place.
-export type TrackId = "python" | "javascript";
+export type TrackId = "python" | "javascript" | "sql";
 
 export interface Track {
   id: TrackId;
@@ -22,6 +22,12 @@ export const TRACKS: readonly Track[] = [
     name: "JavaScript",
     shortName: "JS",
     summary: "Modern JavaScript from fundamentals and closures through async concurrency, APIs, and reactive apps.",
+  },
+  {
+    id: "sql",
+    name: "SQL & Databases",
+    shortName: "SQL",
+    summary: "Real SQLite SQL from SELECT, joins, and aggregations through window functions, CTEs, schemas, triggers, and indexes.",
   },
 ];
 
@@ -64,6 +70,8 @@ export const REGIONS: readonly Region[] = [
   { id: "act25", track: "javascript", act: "JS I", name: "The script annex", summary: "JavaScript: arrays, closures, classes, and async" },
   { id: "act26", track: "javascript", act: "JS II", name: "The module bay", summary: "Fetch, Express routing, schemas, and reactive stores" },
   { id: "act27", track: "javascript", act: "JS III", name: "The runtime deck", summary: "Binary buffers, streams, testing, bundlers, and Proxies" },
+  { id: "act28", track: "sql", act: "SQL I", name: "The query vault", summary: "SQLite SELECT, filtering, aggregations, joins, and subqueries" },
+  { id: "act29", track: "sql", act: "SQL II", name: "The ledger schema", summary: "Window functions, recursive CTEs, constraints, triggers, and indexes" },
 ];
 
 export function regionMeta(id: string): Region {

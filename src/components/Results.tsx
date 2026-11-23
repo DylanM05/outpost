@@ -60,7 +60,13 @@ export function RunProblem({
       </div>
     );
   }
-  const runtimeLabel = relay ? "The relay terminal" : language === "javascript" ? "JavaScript" : "Python";
+  const runtimeLabel = relay
+    ? "The relay terminal"
+    : language === "javascript"
+      ? "JavaScript"
+      : language === "sql"
+        ? "SQLite"
+        : "Python";
   return (
     <div className="fault-box">
       <h3>{runtimeLabel} stopped unexpectedly</h3>

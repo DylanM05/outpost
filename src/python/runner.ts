@@ -48,10 +48,10 @@ export class PythonRunner {
     };
   }
 
-  run(code: string, checks: string, hidden = ""): Promise<RunOutcome> {
+  run(code: string, checks: string, hidden = "", options?: { mode?: "python" | "sql"; setup?: string }): Promise<RunOutcome> {
     if (!this.worker) this.spawn();
     const id = this.nextId++;
-    const request: WorkerRequest = { id, code, checks, hidden };
+    const request: WorkerRequest = { id, code, checks, hidden, mode: options?.mode, setup: options?.setup };
     return new Promise((resolve) => {
       this.pending.set(id, { resolve });
       this.setStatus("running");

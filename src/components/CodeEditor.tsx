@@ -1,7 +1,7 @@
 import { defaultKeymap, history, historyKeymap, indentWithTab } from "@codemirror/commands";
 import { javascript } from "@codemirror/lang-javascript";
 import { python } from "@codemirror/lang-python";
-import { bracketMatching, HighlightStyle, indentOnInput, indentUnit, syntaxHighlighting } from "@codemirror/language";
+import { bracketMatching, HighlightStyle, indentOnInput, indentUnit, StreamLanguage, syntaxHighlighting } from "@codemirror/language";
 import { Annotation, EditorState, Prec, StateEffect, StateField, type Extension } from "@codemirror/state";
 import {
   Decoration,
@@ -83,8 +83,76 @@ const theme = EditorView.theme(
   { dark: true },
 );
 
+const SQL_KEYWORDS = new Set([
+  "SELECT", "FROM", "WHERE", "AS", "AND", "OR", "NOT", "IN", "IS", "NULL", "BETWEEN", "LIKE",
+  "ORDER", "BY", "ASC", "DESC", "LIMIT", "OFFSET", "DISTINCT", "GROUP", "HAVING", "JOIN",
+  "INNER", "LEFT", "RIGHT", "FULL", "OUTER", "CROSS", "ON", "USING", "UNION", "ALL",
+  "INTERSECT", "EXCEPT", "EXISTS", "CASE", "WHEN", "THEN", "ELSE", "END", "WITH", "RECURSIVE",
+  "OVER", "PARTITION", "ROWS", "RANGE", "UNBOUNDED", "PRECEDING", "FOLLOWING", "CURRENT", "ROW",
+  "CREATE", "TABLE", "VIEW", "INDEX", "TRIGGER", "UNIQUE", "PRIMARY", "KEY", "FOREIGN",
+  "REFERENCES", "DELETE", "CASCADE", "RESTRICT", "SET", "CHECK", "DEFAULT", "AUTOINCREMENT",
+  "INSERT", "INTO", "VALUES", "UPDATE", "CONFLICT", "DO", "NOTHING", "EXCLUDED", "RETURNING",
+  "DROP", "ALTER", "ADD", "COLUMN", "BEGIN", "COMMIT", "ROLLBACK", "TRANSACTION", "AFTER",
+  "BEFORE", "FOR", "EACH", "NEW", "OLD", "EXPLAIN", "QUERY", "PLAN", "PRAGMA", "IF", "TEMP",
+  "TEMPORARY", "INTEGER", "TEXT", "REAL", "BLOB", "NUMERIC", "BOOLEAN", "TRUE", "FALSE",
+]);
+
+const SQL_FUNCTIONS = new Set([
+  "COUNT", "SUM", "AVG", "MIN", "MAX", "ROUND", "COALESCE", "IFNULL", "NULLIF", "ABS",
+  "LOWER", "UPPER", "LENGTH", "SUBSTR", "TRIM", "REPLACE", "GROUP_CONCAT", "CAST",
+  "ROW_NUMBER", "RANK", "DENSE_RANK", "LAG", "LEAD", "FIRST_VALUE", "LAST_VALUE", "NTILE",
+  "JSON_EXTRACT", "JSON_EACH", "JSON_TYPE", "JSON_ARRAY_LENGTH",
+]);
+
+const sqlLanguage = StreamLanguage.define<{ inBlockComment: boolean }>({
+  startState: () => ({ inBlockComment: false }),
+  token(stream, state) {
+    if (state.inBlockComment) {
+      if (stream.skipTo("*/")) {
+        stream.pos += 2;
+        state.inBlockComment = false;
+      } else {
+        stream.skipToEnd();
+      }
+      return "comment";
+    }
+    if (stream.eatSpace()) return null;
+    if (stream.match("--")) {
+      stream.skipToEnd();
+      return "comment";
+    }
+    if (stream.match("/*")) {
+      state.inBlockComment = true;
+      return "comment";
+    }
+    if (stream.peek() === "'" || stream.peek() === '"') {
+      const quote = stream.next()!;
+      while (!stream.eol()) {
+        const ch = stream.next();
+        if (ch === quote) {
+          if (stream.peek() === quote) stream.next();
+          else break;
+        }
+      }
+      return quote === "'" ? "string" : "variableName";
+    }
+    if (stream.match(/^\d+(\.\d+)?/)) return "number";
+    if (stream.match(/^[A-Za-z_][A-Za-z0-9_]*/)) {
+      const upper = stream.current().toUpperCase();
+      if (SQL_KEYWORDS.has(upper)) return "keyword";
+      if (SQL_FUNCTIONS.has(upper)) return "function";
+      return "variableName";
+    }
+    if (stream.match(/^[=<>!+\-*/|%,.;()]+/)) return "operator";
+    stream.next();
+    return null;
+  },
+});
+
 function createState(doc: string, props: RefObject<Props>): EditorState {
-  const isJs = props.current.language === "javascript";
+  const lang = props.current.language ?? "python";
+  const twoSpace = lang === "javascript" || lang === "sql";
+  const langExt = lang === "javascript" ? javascript() : lang === "sql" ? sqlLanguage : python();
   const extensions: Extension[] = [
     lineNumbers(),
     highlightActiveLineGutter(),
@@ -93,9 +161,9 @@ function createState(doc: string, props: RefObject<Props>): EditorState {
     history(),
     indentOnInput(),
     bracketMatching(),
-    indentUnit.of(isJs ? "  " : "    "),
-    EditorState.tabSize.of(isJs ? 2 : 4),
-    isJs ? javascript() : python(),
+    indentUnit.of(twoSpace ? "  " : "    "),
+    EditorState.tabSize.of(twoSpace ? 2 : 4),
+    langExt,
     syntaxHighlighting(highlight),
     theme,
     errorLineField,

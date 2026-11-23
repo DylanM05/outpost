@@ -14,7 +14,7 @@ The intervals and thresholds below are product hypotheses to test with learners.
 
 ## Implemented: maintenance calls
 
-Outpost runs two independent tracks — **Python & Systems** (Acts I–XXIV, 511 campaign missions) and **JavaScript** (JS I–JS III, 36 campaign missions) — for 547 campaign missions total across twenty-seven acts. Two hundred forty-six maintenance tasks provide three variants each across all 82 browser-code skills (73 Python + 9 JavaScript). Terminal skills (Acts III–IV Linux/Git and Act V pytest) can follow once playtesting validates the review cadence. A prerequisite mission unlocks each pool so calls do not require concepts the player has not encountered.
+Outpost runs three independent tracks — **Python & Systems** (Acts I–XXIV, 511 campaign missions), **JavaScript** (JS I–JS III, 36 campaign missions), and **SQL & Databases** (SQL I–SQL II, 24 campaign missions) — for 571 campaign missions total across twenty-nine acts. Two hundred sixty-four maintenance tasks provide three variants each across all 88 browser-code skills (73 Python + 9 JavaScript + 6 SQL). Terminal skills (Acts III–IV Linux/Git and Act V pytest) can follow once playtesting validates the review cadence. A prerequisite mission unlocks each pool so calls do not require concepts the player has not encountered.
 
 The first call becomes due one day after the prerequisite's first completion. Old saves use their original completion timestamps. Passing the capstone can unlock calls through restored prerequisites, but those automatic restorations do not themselves count as skill evidence.
 

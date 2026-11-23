@@ -16,9 +16,17 @@ beforeAll(async () => {
   pyodide.runPython(HARNESS_PY);
 });
 
-async function run(language: Language, code: string, checks: string, hidden = ""): Promise<RunResult> {
+async function run(language: Language, code: string, checks: string, hidden = "", setup = ""): Promise<RunResult> {
   if (language === "javascript") {
     return runJsMission(code, checks, hidden);
+  }
+  if (language === "sql") {
+    const runSqlMission = pyodide.globals.get("run_sql_mission");
+    try {
+      return JSON.parse(runSqlMission(code, setup, checks, hidden)) as RunResult;
+    } finally {
+      runSqlMission.destroy();
+    }
   }
   const runMission = pyodide.globals.get("run_mission");
   try {
@@ -61,19 +69,19 @@ const predictMissions = missions.filter((m) => m.kind === "predict");
 
 describe.each(codeMissions)("$id", (mission) => {
   test("the reference solution passes every check, including hidden ones", async () => {
-    const result = await run(mission.language, mission.solution, mission.checks, mission.hiddenChecks);
+    const result = await run(mission.language, mission.solution, mission.checks, mission.hiddenChecks, mission.setup);
     expect(result.error).toBeNull();
     expect(result.checks.filter((c) => !c.passed)).toEqual([]);
     expect(passedAll(result)).toBe(true);
   });
 
   test.each(SUPPORT_LEVELS)("the %s starter code doesn't already pass", async (level) => {
-    const result = await run(mission.language, mission.starters[level], mission.checks, mission.hiddenChecks);
+    const result = await run(mission.language, mission.starters[level], mission.checks, mission.hiddenChecks, mission.setup);
     expect(passedAll(result)).toBe(false);
   });
 
   test("hidden checks are marked hidden", async () => {
-    const result = await run(mission.language, mission.solution, mission.checks, mission.hiddenChecks);
+    const result = await run(mission.language, mission.solution, mission.checks, mission.hiddenChecks, mission.setup);
     const hidden = result.checks.filter((c) => c.hidden).length;
     expect(hidden > 0).toBe(mission.hiddenChecks.trim() !== "");
   });
@@ -81,13 +89,13 @@ describe.each(codeMissions)("$id", (mission) => {
 
 describe.each(predictMissions)("$id", (mission) => {
   test("the program runs and prints what the Output section says", async () => {
-    const result = await run(mission.language, mission.program, "");
+    const result = await run(mission.language, mission.program, "", "", mission.setup);
     expect(result.error).toBeNull();
     expect(outputLines(result.stdout)).toEqual(outputLines(mission.expectedOutput));
   });
 
   test("the expected output passes and an empty prediction doesn't", async () => {
-    const { stdout } = await run(mission.language, mission.program, "");
+    const { stdout } = await run(mission.language, mission.program, "", "", mission.setup);
     expect(comparePrediction(mission.expectedOutput, stdout).passed).toBe(true);
     expect(comparePrediction("", stdout).passed).toBe(false);
   });

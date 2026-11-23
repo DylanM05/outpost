@@ -3,7 +3,14 @@
 import type { PyodideInterface } from "pyodide";
 import { HARNESS_PY } from "./harness";
 
-export type WorkerRequest = { id: number; code: string; checks: string; hidden: string };
+export type WorkerRequest = {
+  id: number;
+  code: string;
+  checks: string;
+  hidden: string;
+  mode?: "python" | "sql";
+  setup?: string;
+};
 
 export type WorkerMessage =
   | { type: "ready" }
@@ -38,12 +45,16 @@ ready.then(
 );
 
 scope.onmessage = async (event) => {
-  const { id, code, checks, hidden } = event.data;
+  const { id, code, checks, hidden, mode, setup } = event.data;
   const pyodide = await ready;
   scope.postMessage({ type: "started", id });
-  const runMission = pyodide.globals.get("run_mission");
+  const runMission = pyodide.globals.get(mode === "sql" ? "run_sql_mission" : "run_mission");
   try {
-    scope.postMessage({ type: "result", id, json: runMission(code, checks, hidden) as string });
+    const json =
+      mode === "sql"
+        ? (runMission(code, setup ?? "", checks, hidden) as string)
+        : (runMission(code, checks, hidden) as string);
+    scope.postMessage({ type: "result", id, json });
   } catch (err) {
     // Recursion through built-in functions (sum() over a generator that
     // recurses, say) grows the browser's stack, and can exhaust it before
