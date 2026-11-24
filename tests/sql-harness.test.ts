@@ -85,4 +85,25 @@ expect("dynamic", lambda: run_user_sql(), [["B-3", 150], ["B-1", 120]])
     expect(result.error).toBeNull();
     expect(passedAll(result)).toBe(true);
   });
+
+  test("supports explicit BEGIN, SAVEPOINT, ROLLBACK TO, COMMIT, and FTS5 natively", () => {
+    const setup = "CREATE TABLE v (id TEXT PRIMARY KEY, n INT); INSERT INTO v VALUES ('A', 10);";
+    const sql = `
+      BEGIN;
+      UPDATE v SET n = 20 WHERE id = 'A';
+      SAVEPOINT s1;
+      UPDATE v SET n = 99 WHERE id = 'A';
+      ROLLBACK TO s1;
+      RELEASE s1;
+      COMMIT;
+      SELECT id, n FROM v;
+    `;
+    const result = runSql(
+      sql,
+      setup,
+      `expect("savepoint rolled back cleanly", lambda: rows, [["A", 20]])`,
+    );
+    expect(result.error).toBeNull();
+    expect(passedAll(result)).toBe(true);
+  });
 });

@@ -408,6 +408,18 @@ export const SKILLS = {
     name: "SQL query plans, covering indexes, and JSON",
     summary: "Read EXPLAIN QUERY PLAN output, design composite and partial covering indexes for equality-before-range seeks, and query JSON documents with json_extract and json_each.",
   },
+  "sql-transactions": {
+    name: "SQL transactions, savepoints, and safe migrations",
+    summary: "Control atomic changes with BEGIN, SAVEPOINT, ROLLBACK TO, COMMIT, RETURNING, STRICT tables, generated columns, and zero-loss table-rebuild migrations.",
+  },
+  "sql-time-series": {
+    name: "SQL time-series, moving averages, and intervals",
+    summary: "Compute rolling window moving averages, collapse contiguous gaps-and-islands streaks, and detect overlapping temporal intervals.",
+  },
+  "sql-fulltext-analytics": {
+    name: "SQL FTS5 search, FILTER pivots, and cohorts",
+    summary: "Build trigger-synced FTS5 full-text indexes ranked by BM25, pivot aggregates with FILTER (WHERE ...), and compute retention cohort tables in pure SQL.",
+  },
 } as const;
 
 export type SkillId = keyof typeof SKILLS;

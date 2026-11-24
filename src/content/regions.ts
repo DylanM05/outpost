@@ -72,6 +72,7 @@ export const REGIONS: readonly Region[] = [
   { id: "act27", track: "javascript", act: "JS III", name: "The runtime deck", summary: "Binary buffers, streams, testing, bundlers, and Proxies" },
   { id: "act28", track: "sql", act: "SQL I", name: "The query vault", summary: "SQLite SELECT, filtering, aggregations, joins, and subqueries" },
   { id: "act29", track: "sql", act: "SQL II", name: "The ledger schema", summary: "Window functions, recursive CTEs, constraints, triggers, and indexes" },
+  { id: "act30", track: "sql", act: "SQL III", name: "The transaction hall", summary: "Savepoints, FTS5 search, time-series windows, migrations, and pivots" },
 ];
 
 export function regionMeta(id: string): Region {

@@ -735,19 +735,17 @@ def _exec_sql_script(conn, sql_text):
 
 def run_sql_mission(user_sql, setup_sql, check_code, hidden_code=""):
     result = {"stdout": "", "stdoutTruncated": False, "error": None, "checks": [], "events": []}
-    conn = sqlite3.connect(":memory:")
+    conn = sqlite3.connect(":memory:", isolation_level=None)
     conn.execute("PRAGMA foreign_keys = ON")
     real_stdout = sys.stdout
     try:
         if setup_sql and setup_sql.strip():
             conn.executescript(setup_sql)
-            conn.commit()
         last_columns = []
         last_rows = []
         output_text = ""
         try:
             last_columns, last_rows, output_text = _exec_sql_script(conn, user_sql)
-            conn.commit()
         except sqlite3.Error as exc:
             result["error"] = {"phase": "runtime", "type": type(exc).__name__, "message": str(exc), "line": None}
 
@@ -772,7 +770,6 @@ def run_sql_mission(user_sql, setup_sql, check_code, hidden_code=""):
 
             def run_user_sql():
                 _, new_rows, _ = _exec_sql_script(conn, user_sql)
-                conn.commit()
                 return new_rows
 
             def sql_uses(*keywords):
