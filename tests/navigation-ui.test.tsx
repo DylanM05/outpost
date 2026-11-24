@@ -1,9 +1,10 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { expect, test } from "vitest";
 import { AtlasDialog } from "../src/components/AtlasDialog";
-import { ControlRoomTour, TOUR_STEPS } from "../src/components/ControlRoomTour";
+import { ControlRoomTour, TOUR_STEPS, tourStepsFor } from "../src/components/ControlRoomTour";
 import { Game } from "../src/components/Game";
 import { Plant } from "../src/components/Plant";
+import { Output, Tests } from "../src/components/Results";
 import { SkillsDialog } from "../src/components/SkillsDialog";
 import { missions, reviewMissions, systemsIn } from "../src/content";
 import { regionMeta, regionsInTrack } from "../src/content/regions";
@@ -190,4 +191,91 @@ test("debug mode unlocks every act and renders the Debug control strip with act 
   expect(debugHtml).toContain("Pass mission");
   expect(debugHtml).toContain("Complete act");
   expect(debugHtml).toContain("Act XV: The signal tower");
+});
+
+test("ControlRoomTour names the active mission file per language and SkillsDialog exposes track filter pills", () => {
+  expect(tourStepsFor("python")[1].body).toContain("main.py");
+  expect(tourStepsFor("javascript")[1].body).toContain("main.js");
+  expect(tourStepsFor("typescript")[1].body).toContain("main.ts");
+  expect(tourStepsFor("sql")[1].body).toContain("query.sql");
+
+  const save = emptySave();
+  save.profile = { experience: "new", background: [], support: "guided" };
+  const skillsHtml = renderToStaticMarkup(
+    <SkillsDialog open missions={missions} reviews={reviewMissions} save={save} onClose={() => {}} onOpen={() => {}} />,
+  );
+  expect(skillsHtml).toContain("skills-track-filters");
+  expect(skillsHtml).toContain("All tracks");
+  expect(skillsHtml).toContain("Python");
+  expect(skillsHtml).toContain("JS");
+  expect(skillsHtml).toContain("TS");
+  expect(skillsHtml).toContain("SQL");
+  // Shared skills like reading-code are counted in every track where they appear (e.g. TS >= 4: 3 TS skills + reading-code).
+  expect(skillsHtml).toMatch(/TS <span class="filter-count">([4-9]|\d{2,})<\/span>/);
+
+  // Per-track trackSupport starting levels should not falsely report adaptive drift before any completion.
+  const partialExpSave = emptySave();
+  partialExpSave.profile = {
+    experience: "experienced",
+    background: ["python"],
+    support: "challenge",
+    trackSupport: { python: "challenge", javascript: "standard", typescript: "standard", sql: "standard" },
+  };
+  const noDriftHtml = renderToStaticMarkup(
+    <SkillsDialog open missions={missions} reviews={reviewMissions} save={partialExpSave} onClose={() => {}} onOpen={() => {}} />,
+  );
+  expect(noDriftHtml).not.toContain("Missions for this skill now start at");
+});
+
+test("Output renders sql_table events as HTML tables with empty/truncated/multi-table states and Tests formats diffs safely", () => {
+  const sqlResult = {
+    stdout: "id | note\nN-1 | NULL\n",
+    stdoutTruncated: true,
+    error: null,
+    checks: [
+      { label: "matches pairs", passed: false, detail: "Expected [1, 2], got [1, 3]. Check loop bounds", hidden: false },
+      { label: "js assertion", passed: false, detail: "expected 42, got 99", hidden: false },
+      { label: "apostrophe", passed: false, detail: "Expected player's score 10, got 0", hidden: false },
+      { label: "ellipsis", passed: false, detail: "Expected 'ok', got ...", hidden: false },
+      { label: "passed check", passed: true, detail: "Expected 1, got 1", hidden: false },
+    ],
+    events: [
+      {
+        kind: "sql_table",
+        data: { columns: ["id", "note"], rows: [["N-1", null]], totalRows: 205, truncated: true, hidden: false },
+      },
+      {
+        kind: "sql_table",
+        data: { columns: ["id"], rows: [], totalRows: 0, truncated: false, hidden: false },
+      },
+    ],
+  };
+
+  const outHtml = renderToStaticMarkup(<Output result={sqlResult} />);
+  expect(outHtml).toContain("sql-table-wrap");
+  expect(outHtml).toContain("sql-result-table");
+  expect(outHtml).toContain("sql-table-meta");
+  expect(outHtml).toContain("Showing 1 of 205 rows");
+  expect(outHtml).toContain("0 rows returned");
+  expect(outHtml).toContain('aria-label="Output table 1"');
+  expect(outHtml).toContain('aria-label="Output table 2"');
+  expect(outHtml).toContain("sql-null");
+  expect(outHtml).toContain("NULL");
+  expect(outHtml).not.toContain("20,000 characters");
+
+  const plainHtml = renderToStaticMarkup(<Output result={sqlResult} title="The program printed" plain />);
+  expect(plainHtml).not.toContain("sql-result-table");
+  expect(plainHtml).toContain("<pre>id | note");
+  expect(plainHtml).toContain("20,000 characters");
+
+  const testsHtml = renderToStaticMarkup(<Tests result={sqlResult} />);
+  expect(testsHtml).toContain("test-diff");
+  expect(testsHtml).toContain("<dt>Expected</dt><dd><code>[1, 2]</code></dd>");
+  expect(testsHtml).toContain("<dt>Got</dt><dd><code>[1, 3]</code></dd>");
+  expect(testsHtml).toContain("Check loop bounds");
+  expect(testsHtml).toContain("<dt>Expected</dt><dd><code>42</code></dd>");
+  expect(testsHtml).toContain("<dt>Got</dt><dd><code>99</code></dd>");
+  expect(testsHtml).toContain("<dt>Expected</dt><dd><code>player&#x27;s score 10</code></dd>");
+  expect(testsHtml).toContain("<dt>Got</dt><dd><code>...</code></dd>");
+  expect(testsHtml).not.toContain("<dt>Expected</dt><dd><code>1</code></dd>");
 });

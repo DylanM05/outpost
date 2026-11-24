@@ -1,17 +1,20 @@
 import type { Dispatch } from "react";
-import { allMissions } from "../content";
-import type { Mission, System } from "../content/parse";
-import { regionMeta } from "../content/regions";
+import { allMissions, regionOf } from "../content";
+import { SUPPORT_LEVELS, type Mission, type System } from "../content/parse";
+import { regionMeta, trackOfRegion } from "../content/regions";
 import { SKILLS } from "../content/skills";
 import {
   canSkipAhead,
+  canViewSolution,
   easierStart,
   hintsUnlocked,
   isRestored,
   isUnlocked,
   lessonStartsOpen,
+  starterChangesAtLevel,
   SUPPORT_LABEL,
   systemProgress,
+  trackEntry,
   type SupportChoice,
 } from "../game/rules";
 import type { Action, SaveData } from "../game/save";
@@ -33,9 +36,16 @@ interface Props {
   onReplay(): void;
 }
 
-// Says why adaptive support moved, in terms of the mission that moved it.
-function adaptation({ level, step }: SupportChoice): string | null {
+// Says why adaptive support moved, in terms of the mission that moved it,
+// only when the starter code at the new level actually differs.
+function adaptation(mission: Mission, { level, step }: SupportChoice): string | null {
   if (!step) return null;
+  const i = SUPPORT_LEVELS.indexOf(level);
+  const prev =
+    step.reason === "clean"
+      ? SUPPORT_LEVELS[Math.max(0, i - 1)]
+      : SUPPORT_LEVELS[Math.min(SUPPORT_LEVELS.length - 1, i + 1)];
+  if (!starterChangesAtLevel(mission, level, prev)) return null;
   const from = allMissions.find((m) => m.id === step.missionId)?.title ?? "An earlier mission";
   return step.reason === "clean"
     ? `You solved ${from} without help, so this mission gives you less to start from: ${SUPPORT_LABEL[level]} support.`
@@ -63,7 +73,9 @@ export function Brief({
   const submits = save.submits[mission.id] ?? 0;
   const nothingRestoredYet = Object.keys(save.completions).length === 0;
   const offerSkip = canSkipAhead(save.profile) && nothingRestoredYet && assessment && !mission.assessment;
-  const adapted = mission.kind === "code" && choice.source === "adaptive" && !restored ? adaptation(choice) : null;
+  const adapted = mission.kind === "code" && choice.source === "adaptive" && !restored ? adaptation(mission, choice) : null;
+  const viewedSolution = Boolean(save.solutionsViewed?.[mission.id]);
+  const showSolutionOffer = canViewSolution(mission, save);
   const offerEasier = easierStart(mission, save, choice);
   const lessonOpen = lessonStartsOpen(mission, save, support);
 
@@ -203,12 +215,35 @@ export function Brief({
             onSwitch={() => dispatch({ type: "pin-support", missionId: mission.id, support: offerEasier })}
           />
         )}
+        {(showSolutionOffer || viewedSolution) &&
+          mission.solution.trim() !== "" &&
+          (viewedSolution ? (
+            <details className="solution-reveal" open>
+              <summary>Reference solution (counts as practice)</summary>
+              <pre tabIndex={0}>
+                <code>{mission.solution}</code>
+              </pre>
+            </details>
+          ) : (
+            <div className="solution-offer">
+              <p className="note">Still stuck after hints and retries? Compare your draft against the reference solution.</p>
+              <button
+                type="button"
+                className="quiet"
+                onClick={() => dispatch({ type: "view-solution", missionId: mission.id })}
+              >
+                Compare with reference solution
+              </button>
+            </div>
+          ))}
         <p className="note">
-          {support === "guided"
-            ? "Guided missions count as practice. To demonstrate a skill, solve a mission at Standard or Challenge support without hints."
-            : revealed > 0
-              ? "This attempt counts as practice now. Replay the mission later without hints to demonstrate the skill."
-              : "Hints are always fine to use. Solving this without them demonstrates the skill."}
+          {viewedSolution
+            ? "You opened the reference solution on this attempt, so this mission counts as practice now. Replay without it later to demonstrate the skill."
+            : support === "guided"
+              ? "Guided missions count as practice. To demonstrate a skill, solve a mission at Standard or Challenge support without hints."
+              : revealed > 0
+                ? "This attempt counts as practice now. Replay the mission later without hints to demonstrate the skill."
+                : "Hints are always fine to use. Solving this without them demonstrates the skill."}
         </p>
       </section>
 
@@ -243,7 +278,8 @@ function MaintenanceBrief({
 }: Pick<Props, "mission" | "save" | "dispatch" | "onOpen" | "missions">) {
   const state = save.reviews[mission.reviewSkill!];
   const revealed = Math.min(save.hintsRevealed[mission.id] ?? 0, mission.hints.length);
-  const campaign = missions.find((m) => !isRestored(save, m.id)) ?? missions[0];
+  const track = trackOfRegion(regionOf(mission));
+  const campaign = trackEntry(missions, track, save) ?? missions[0];
 
   return (
     <section className="brief" aria-labelledby="mission-title">

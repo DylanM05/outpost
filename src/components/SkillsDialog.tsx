@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { Mission } from "../content/parse";
-import { regionMeta } from "../content/regions";
+import { regionMeta, TRACKS, type TrackId } from "../content/regions";
 import type { SkillId } from "../content/skills";
 import { calibrationSummary } from "../game/confidence";
 import { isUnlocked, skillReport, skillSupport, SUPPORT_LABEL, type Evidence } from "../game/rules";
@@ -14,6 +14,7 @@ const EVIDENCE_TEXT: Record<Evidence, string> = {
 };
 
 type Filter = "all" | Evidence;
+type TrackFilter = "all" | TrackId;
 
 const FILTER_LABELS: { id: Filter; label: string }[] = [
   { id: "all", label: "All" },
@@ -27,8 +28,11 @@ const FILTER_LABELS: { id: Filter; label: string }[] = [
 // starting level, so the player can see what changed.
 function AdaptedLevel({ catalog, save, skill }: { catalog: Mission[]; save: SaveData; skill: SkillId }) {
   if (!save.profile || save.profile.fixedSupport) return null;
-  const { level } = skillSupport(catalog, save, skill);
-  if (level === save.profile.support) return null;
+  const firstCampaign = catalog.find((m) => !m.reviewSkill && m.skills.includes(skill));
+  const base =
+    (firstCampaign && save.profile.trackSupport?.[regionMeta(firstCampaign.region).track]) ?? save.profile.support;
+  const { level, step } = skillSupport(catalog, save, skill);
+  if (!step || level === base) return null;
   return <p className="skill-support">Missions for this skill now start at {SUPPORT_LABEL[level]} support.</p>;
 }
 
@@ -45,6 +49,7 @@ interface Props {
 export function SkillsDialog({ open, missions, reviews, save, unlockAll = false, onClose, onOpen }: Props) {
   const dialog = useRef<HTMLDialogElement>(null);
   const [filter, setFilter] = useState<Filter>("all");
+  const [trackFilter, setTrackFilter] = useState<TrackFilter>("all");
   const [query, setQuery] = useState("");
 
   useEffect(() => {
@@ -52,6 +57,7 @@ export function SkillsDialog({ open, missions, reviews, save, unlockAll = false,
     if (!element) return;
     if (open && !element.open) {
       setFilter("all");
+      setTrackFilter("all");
       setQuery("");
       element.showModal();
     }
@@ -62,16 +68,33 @@ export function SkillsDialog({ open, missions, reviews, save, unlockAll = false,
   const report = useMemo(() => skillReport(catalog, save), [catalog, save]);
   const calibration = calibrationSummary(save.confidenceLog);
 
-  const counts = useMemo(() => {
-    const c: Record<Filter, number> = { all: report.length, retained: 0, demonstrated: 0, practiced: 0, untried: 0 };
-    for (const s of report) c[s.evidence]++;
+  const tracksOf = (skill: (typeof report)[number]): TrackId[] => [
+    ...new Set(skill.missions.filter((m) => !m.reviewSkill).map((m) => regionMeta(m.region).track)),
+  ];
+
+  const trackCounts = useMemo(() => {
+    const c: Record<TrackFilter, number> = { all: report.length, python: 0, javascript: 0, typescript: 0, sql: 0 };
+    for (const s of report) {
+      for (const t of tracksOf(s)) c[t]++;
+    }
     return c;
   }, [report]);
+
+  const trackScoped = useMemo(
+    () => (trackFilter === "all" ? report : report.filter((skill) => tracksOf(skill).includes(trackFilter))),
+    [report, trackFilter],
+  );
+
+  const counts = useMemo(() => {
+    const c: Record<Filter, number> = { all: trackScoped.length, retained: 0, demonstrated: 0, practiced: 0, untried: 0 };
+    for (const s of trackScoped) c[s.evidence]++;
+    return c;
+  }, [trackScoped]);
 
   const trimmed = query.trim().toLowerCase();
   const visible = useMemo(
     () =>
-      report.filter((skill) => {
+      trackScoped.filter((skill) => {
         if (filter !== "all" && skill.evidence !== filter) return false;
         if (!trimmed) return true;
         const firstCampaign = skill.missions.find((m) => !m.reviewSkill);
@@ -87,7 +110,7 @@ export function SkillsDialog({ open, missions, reviews, save, unlockAll = false,
           .toLowerCase();
         return hay.includes(trimmed);
       }),
-    [report, filter, trimmed],
+    [trackScoped, filter, trimmed],
   );
 
   return (
@@ -135,6 +158,27 @@ export function SkillsDialog({ open, missions, reviews, save, unlockAll = false,
         )}
 
         <div className="skills-toolbar">
+          <div className="skills-track-filters" role="group" aria-label="Filter skills by track">
+            <button
+              type="button"
+              className={`filter-pill${trackFilter === "all" ? " active" : ""}`}
+              aria-pressed={trackFilter === "all"}
+              onClick={() => setTrackFilter("all")}
+            >
+              All tracks <span className="filter-count">{trackCounts.all}</span>
+            </button>
+            {TRACKS.map((t) => (
+              <button
+                key={t.id}
+                type="button"
+                className={`filter-pill${trackFilter === t.id ? " active" : ""}`}
+                aria-pressed={trackFilter === t.id}
+                onClick={() => setTrackFilter(t.id)}
+              >
+                {t.shortName} <span className="filter-count">{trackCounts[t.id]}</span>
+              </button>
+            ))}
+          </div>
           <div className="skills-filters" role="group" aria-label="Filter skills by status">
             {FILTER_LABELS.map(({ id, label }) => (
               <button

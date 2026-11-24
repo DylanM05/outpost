@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from "react";
 import { systemsIn } from "../content";
 import { REGIONS, TRACKS, type TrackId } from "../content/regions";
-import type { Mission } from "../content/parse";
+import type { Mission, SupportLevel } from "../content/parse";
 import { SUPPORT_FOR_EXPERIENCE, SUPPORT_LABEL, trackEntry } from "../game/rules";
 import type { Background, Experience, Profile, SaveData } from "../game/save";
 import { Schematic } from "./Schematic";
@@ -31,6 +31,9 @@ const EXPERIENCE_OPTIONS: { id: Experience; label: string; detail: string }[] = 
 
 const BACKGROUND_OPTIONS: { id: Background; label: string }[] = [
   { id: "python", label: "Python" },
+  { id: "javascript", label: "JavaScript" },
+  { id: "typescript", label: "TypeScript" },
+  { id: "sql", label: "SQL" },
   { id: "other-language", label: "Another programming language" },
   { id: "terminal", label: "A terminal or command line" },
   { id: "git", label: "Git" },
@@ -57,7 +60,15 @@ export function Onboarding({ missions, save, onStart }: Props) {
     event.preventDefault();
     if (experience && support) {
       const startMission = trackEntry(missions, track, save, true) ?? missions[0];
-      onStart({ experience, background, support }, startMission.id);
+      const hasLanguageBackground = TRACKS.some((t) => background.includes(t.id)) || background.includes("other-language");
+      const trackSupport: Partial<Record<TrackId, SupportLevel>> | undefined =
+        support === "challenge" && hasLanguageBackground
+          ? Object.fromEntries(TRACKS.map((t) => [t.id, background.includes(t.id) ? "challenge" : "standard"]))
+          : undefined;
+      onStart(
+        trackSupport ? { experience, background, support, trackSupport } : { experience, background, support },
+        startMission.id,
+      );
     }
   };
 
@@ -88,6 +99,11 @@ export function Onboarding({ missions, save, onStart }: Props) {
               </label>
             ))}
           </div>
+          {track === "typescript" && (
+            <p className="field-note">
+              TypeScript builds on JavaScript syntax — start on JavaScript first if variables, arrays, and functions are new.
+            </p>
+          )}
         </fieldset>
 
         <fieldset>
@@ -111,7 +127,10 @@ export function Onboarding({ missions, save, onStart }: Props) {
           <legend>
             Which of these have you used? <span className="optional">Optional</span>
           </legend>
-          <p className="field-note">Later parts of the outpost use this to decide what to explain.</p>
+          <p className="field-note">
+            Later parts of the outpost use this to decide what to explain. If you already program, paths you haven't checked
+            here still start with open lessons (Standard support).
+          </p>
           <div className="chips">
             {BACKGROUND_OPTIONS.map((option) => (
               <label key={option.id} className="chip">

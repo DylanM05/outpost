@@ -106,4 +106,84 @@ expect("dynamic", lambda: run_user_sql(), [["B-3", 150], ["B-1", 120]])
     expect(result.error).toBeNull();
     expect(passedAll(result)).toBe(true);
   });
+
+  test("emits structured sql_table telemetry events with NULL cells and row-cap metadata", () => {
+    const setup = "CREATE TABLE notes (id TEXT, body TEXT); INSERT INTO notes VALUES ('N-1', NULL), ('N-2', 'ok');";
+    const single = runSql("SELECT id, body FROM notes ORDER BY id ASC;", setup, "");
+    expect(single.error).toBeNull();
+    expect(single.events).toEqual([
+      {
+        kind: "sql_table",
+        data: {
+          columns: ["id", "body"],
+          rows: [
+            ["N-1", null],
+            ["N-2", "ok"],
+          ],
+          totalRows: 2,
+          truncated: false,
+          hidden: false,
+        },
+      },
+    ]);
+
+    const many = runSql(
+      "WITH RECURSIVE cnt(n) AS (SELECT 1 UNION ALL SELECT n + 1 FROM cnt WHERE n < 205) SELECT n FROM cnt;",
+      "",
+      "",
+    );
+    expect(many.error).toBeNull();
+    const tableEvent = many.events.find((e) => e.kind === "sql_table");
+    expect(tableEvent?.data).toMatchObject({
+      columns: ["n"],
+      totalRows: 205,
+      truncated: true,
+      hidden: false,
+    });
+    expect((tableEvent?.data.rows as unknown[][]).length).toBe(200);
+  });
+
+  test("maps sqlite3 errors in multi-statement scripts without double-counting leading comments and unwraps run_user_sql errors", () => {
+    const syntaxSql = [
+      "-- leading comment line 1",
+      "-- leading comment line 2",
+      "SELECT",
+      "  areas",
+      "  FORM sensors;",
+    ].join("\n");
+    const syntaxResult = runSql(syntaxSql, "", "");
+    expect(syntaxResult.error).not.toBeNull();
+    expect(syntaxResult.error?.type).toBe("OperationalError");
+    expect(syntaxResult.error?.line).toBe(5);
+
+    // Ensure token "as" does not false-match inside "areas" on an earlier line.
+    const wordSql = ["SELECT areas", "FROM sensors", "WHERE as = 1;"].join("\n");
+    const wordResult = runSql(wordSql, "CREATE TABLE sensors (areas TEXT);", "");
+    expect(wordResult.error?.message).toContain('near "as"');
+    expect(wordResult.error?.line).toBe(3);
+
+    // Multiple SELECT statements emit separate sql_table events in execution order.
+    const multi = runSql("SELECT 1 AS a; SELECT 2 AS b;", "", "");
+    expect(multi.error).toBeNull();
+    expect(multi.events).toHaveLength(2);
+    expect(multi.events[0]?.data).toMatchObject({ columns: ["a"], rows: [[1]] });
+    expect(multi.events[1]?.data).toMatchObject({ columns: ["b"], rows: [[2]] });
+
+    // run_user_sql unwraps _SqlExecError back to sqlite3.Error for hidden checks.
+    const hiddenCheck = runSql(
+      "INSERT INTO t VALUES (1);",
+      "CREATE TABLE t (id INTEGER PRIMARY KEY);",
+      "",
+      `
+def test_dup():
+    try:
+        run_user_sql()
+        return False
+    except sqlite3.IntegrityError:
+        return True
+check("raises IntegrityError cleanly", test_dup, "expected IntegrityError")
+`,
+    );
+    expect(passedAll(hiddenCheck)).toBe(true);
+  });
 });

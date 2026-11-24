@@ -21,7 +21,8 @@ export interface MaintenanceCall {
   state: ReviewState;
 }
 
-const independent = (c: Completion) => !c.viaAssessment && c.support !== "guided" && c.hintsUsed === 0;
+const independent = (c: Completion) =>
+  !c.viaAssessment && !c.solutionViewed && c.support !== "guided" && c.hintsUsed === 0;
 
 // Old saves need no migration timestamp: the completed prerequisite supplies it.
 // Merely opening the game never changes a due date.

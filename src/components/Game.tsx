@@ -261,6 +261,7 @@ export function Game({ save, profile, dispatch, initialDebugMode }: Props) {
       passed,
       support: supportFor(target, save, allMissions),
       alsoRestores,
+      solutionViewed: Boolean(save.solutionsViewed?.[target.id]),
       confidence: chosenConfidence ?? undefined,
     });
 
@@ -534,6 +535,7 @@ export function Game({ save, profile, dispatch, initialDebugMode }: Props) {
 
       <ControlRoomTour
         open={tourOpen}
+        language={mission.language}
         onClose={() => setTourOpen(false)}
         onFocusPane={setMobilePane}
       />

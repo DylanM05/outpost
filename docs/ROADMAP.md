@@ -102,3 +102,19 @@ Support adapts per skill: onboarding sets the starting level, a clean solve give
 7. **Add placement through demonstrated work.**
 8. **Make `pytest` faster for players.** Starting pytest on the emulated machine takes about 4 seconds on an idle computer, about twice that the first time in each mission (probably because the emulator's compiled code starts empty after every restore; warming pytest into the saved state didn't help), and 15 seconds or more when the computer is busy. Nearly all of it is importing pytest. Checks already avoid it by forking the check agent, which has pytest loaded. The player's own `pytest` command could do the same: a small `pytest` in `/usr/local/bin` that hands its arguments, folder, environment, and terminal to the agent over a Unix socket, so a forked, already-loaded pytest runs in the player's terminal as the player. Ctrl+C then has to reach the forked process too.
 9. **Before a public release:** accessibility review (including xterm.js's screen reader mode for the terminal), content versioning, a contributor guide, and optional accounts/server-side progress for shared hosting. The relay machine redistributes Alpine Linux packages, most of them GPL-licensed, so a public release needs a written source offer or links to the exact package sources, alongside v86's BSD and SeaBIOS's LGPL notices.
+
+## Curriculum & pedagogy polish backlog
+
+Following PR A (quick bugfixes, multi-track UX fluency, SQL HTML table output & error line mapping, and stuck-learner reference comparison), two follow-up PRs capture the remaining medium- and long-term improvements:
+
+### PR B — Curriculum depth & transfer upgrades
+
+1. **Deliberate modification & debugging bridges:** Add targeted code-modification missions between `predict` tracing and open-ended `code` tasks where beginners commonly stall.
+2. **Maintenance transfer quality audit (Python, JS, SQL, TS):** Expand bug-hunt, refactor, and edge-case maintenance variants across the 94 browser-code skills so delayed calls assess transfer rather than recall of the original starter shape.
+3. **Track-aware background checks & SQL/TS diagnostics:** Enrich SQLite query-plan visualization, TypeScript compiler diagnostic mapping to friendly explanations, and deeper verification tests across track boundaries.
+
+### PR C — TypeScript II, C++ / Systems track & platform polish
+
+1. **TypeScript II (`act32+`):** Expand TypeScript beyond `TS I` into advanced generics, mapped/conditional utility types, async typed APIs, and strict state machines.
+2. **C++ (or Rust) systems track:** Evaluate and integrate an in-browser WebAssembly compiler/runner (with structured diagnostics, memory/UB feedback, and mission test harness) alongside the existing Python, JS, TS, and SQL tracks.
+3. **Diagnostic placement & faster relay `pytest`:** Replace self-reported placement with optional diagnostic tasks, implement the socket-forked `pytest` worker in the relay image, and complete pre-release accessibility & GPL source packaging.

@@ -2,7 +2,7 @@
 id: sql-explain-plan-trace
 kind: predict
 language: sql
-title: Trace composite index column order and covering-index query plans
+title: Trace composite index columns with pragma_index_xinfo
 system: Index bench
 symbol: instrument
 scene: console
@@ -11,26 +11,26 @@ skills: sql-indexes-transactions, reading-code
 
 ## Briefing
 
-A composite B-tree index `idx_logs_sector_ts_level` on `logs(sector, ts, level)` sorts entries first by `sector`, then by `ts`, then by `level`. Understanding how the query planner uses a composite index (`SCAN` vs `SEARCH ... USING INDEX` vs `SEARCH ... USING COVERING INDEX`) starts with tracing the index's column sequence in `pragma_index_info` and matching query shapes against the leftmost-prefix rule.
+A composite B-tree index `idx_logs_sector_ts_level` on `logs(sector ASC, ts DESC, level ASC)` stores sorted key columns followed by SQLite's internal base-table `rowid` pointer. Tracing `pragma_index_xinfo('idx_logs_sector_ts_level')` reveals exact key positions (`seqno`), sort directions (`desc`), and which trailing slot points back to the table rather than holding an indexed key (`key = 0`).
 
 ## Objective
 
-Trace the query in `## Program` that inspects `pragma_index_info('idx_logs_sector_ts_level')` and classifies candidate queries in `query_catalog`, then predict **every line of output**.
+Trace the query in `## Program` against `pragma_index_xinfo('idx_logs_sector_ts_level')`, then predict **every line of output** (header plus all four rows).
 
 ## Concept
 
-- A composite B-tree index on `(col0, col1, col2)` can only be searched (`SEARCH`) when a query filters on a **leftmost prefix** starting at `col0` (`sector`):
-  - If the query does **not** constrain the leading column `sector` (`uses_leading_sector = 0`), the planner falls back to a full table scan (`SCAN logs`).
-  - If the query constrains `sector` (`uses_leading_sector = 1`) and every column referenced anywhere in `SELECT`, `WHERE`, and `ORDER BY` is present inside the index (`needs_payload_col = 0`), SQLite satisfies the query entirely from the index B-tree without touching the base table (`SEARCH logs USING COVERING INDEX idx_logs_sector_ts_level`).
-  - If the query constrains `sector` (`uses_leading_sector = 1`) but also fetches an unindexed column like `message` (`needs_payload_col = 1`), SQLite searches the index and then looks up the base table row (`SEARCH logs USING INDEX idx_logs_sector_ts_level`).
+- Every column you declare in `CREATE INDEX` gets a sequential `seqno` starting at `0`, with `key = 1`:
+  - `desc = 0` means ascending (`ASC`, the default); `desc = 1` means descending (`DESC`).
+- Unlike `pragma_index_info` (which lists only the declared key columns), `pragma_index_xinfo` also reveals SQLite's implicit trailing base-table `rowid` entry:
+  - Its `name` is `NULL`, `desc` is `0`, and `key` is `0`.
+  - When a query reads only columns present in the index (`sector`, `ts`, `level`) plus the table `rowid` / `INTEGER PRIMARY KEY`, SQLite can satisfy it with a covering-index scan without looking up the base table row.
+- In pipe-separated table output, SQLite `NULL` prints as `NULL`.
 
 ## Hints
 
-1. Check `query_catalog` ordered by `qid ASC`:
-   - `Q1` (`uses_leading_sector = 1`, `needs_payload_col = 0`) uses the **covering index**.
-   - `Q2` (`uses_leading_sector = 1`, `needs_payload_col = 1`) uses the **index** (plus table lookup).
-   - `Q3` (`uses_leading_sector = 0`, `needs_payload_col = 0`) filters only on `ts` (skipping leading `sector`), so it performs `SCAN logs`.
-2. Notice the subquery counts `COUNT(*)` from `pragma_index_info('idx_logs_sector_ts_level')`, which is `3` indexed columns (`sector`, `ts`, `level`).
+1. Look at `CREATE INDEX idx_logs_sector_ts_level ON logs(sector ASC, ts DESC, level ASC)` in `## Setup`: `seqno` `0`, `1`, and `2` are `sector`, `ts`, and `level`, each with `key = 1`. Only `ts` is `DESC`, so its `desc` column is `1` while the others are `0`.
+2. `pragma_index_xinfo` includes one extra hidden column after all declared index keys (`seqno = 3`) for the underlying table `rowid`.
+3. For that hidden `rowid` row, `name` is `NULL`, `desc` is `0`, and `key` is `0` — so the fourth data row prints `3 | NULL | 0 | 0`.
 
 ## Setup
 
@@ -43,44 +43,27 @@ CREATE TABLE logs (
   message TEXT NOT NULL
 );
 
-CREATE INDEX idx_logs_sector_ts_level ON logs(sector, ts, level);
-
-CREATE TABLE query_catalog (
-  qid TEXT PRIMARY KEY,
-  uses_leading_sector INTEGER NOT NULL,
-  needs_payload_col INTEGER NOT NULL
-);
-
-INSERT INTO query_catalog (qid, uses_leading_sector, needs_payload_col) VALUES
-  ('Q1', 1, 0),
-  ('Q2', 1, 1),
-  ('Q3', 0, 0);
+CREATE INDEX idx_logs_sector_ts_level ON logs(sector ASC, ts DESC, level ASC);
 ```
 
 ## Program
 
 ```sql
-SELECT
-  qid,
-  (SELECT COUNT(*) FROM pragma_index_info('idx_logs_sector_ts_level')) AS index_cols,
-  CASE
-    WHEN uses_leading_sector = 0 THEN 'SCAN logs'
-    WHEN needs_payload_col = 0 THEN 'SEARCH logs USING COVERING INDEX idx_logs_sector_ts_level'
-    ELSE 'SEARCH logs USING INDEX idx_logs_sector_ts_level'
-  END AS expected_plan
-FROM query_catalog
-ORDER BY qid ASC;
+SELECT seqno, name, desc, key
+FROM pragma_index_xinfo('idx_logs_sector_ts_level')
+ORDER BY seqno ASC;
 ```
 
 ## Output
 
 ```text
-qid | index_cols | expected_plan
-Q1 | 3 | SEARCH logs USING COVERING INDEX idx_logs_sector_ts_level
-Q2 | 3 | SEARCH logs USING INDEX idx_logs_sector_ts_level
-Q3 | 3 | SCAN logs
+seqno | name | desc | key
+0 | sector | 0 | 1
+1 | ts | 1 | 1
+2 | level | 0 | 1
+3 | NULL | 0 | 0
 ```
 
 ## Restored
 
-Index bench query-plan trace verified — composite indexes require the leftmost leading column to avoid `SCAN` and avoid base-table lookups when all projected columns are covered.
+Index bench layout trace verified — `pragma_index_xinfo` exposes each key column's sort direction (`desc`) and the trailing `NULL` non-key `rowid` pointer (`key = 0`) that links index entries back to base rows.

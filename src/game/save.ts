@@ -1,10 +1,11 @@
 import { isConfidence } from "./confidence";
 import { finishReview, type ReviewState } from "./maintenance";
+import type { TrackId } from "../content/regions";
 import type { SkillId } from "../content/skills";
 import type { SupportLevel } from "../content/parse";
 
 export type Experience = "new" | "tutorials" | "small-programs" | "experienced";
-export type Background = "python" | "other-language" | "terminal" | "git";
+export type Background = "python" | "javascript" | "typescript" | "sql" | "other-language" | "terminal" | "git";
 export type Confidence = "unsure" | "likely" | "certain";
 
 export interface ConfidenceRecord {
@@ -19,6 +20,9 @@ export interface Profile {
   background: Background[];
   // The starting level from onboarding; adaptive support fades from here.
   support: SupportLevel;
+  // Optional per-track starting support so experienced learners in one language
+  // still get open lessons in tracks they haven't used yet.
+  trackSupport?: Partial<Record<TrackId, SupportLevel>>;
   // Set when the player fixes one level for every mission instead.
   fixedSupport?: SupportLevel;
 }
@@ -31,6 +35,7 @@ export interface Completion {
   // Restored as a side effect of passing the assessment, not played directly.
   viaAssessment: boolean;
   maintenance?: boolean;
+  solutionViewed?: boolean;
 }
 
 export interface SaveData {
@@ -44,6 +49,8 @@ export interface SaveData {
   reviews: Partial<Record<SkillId, ReviewState>>;
   // Missions the player switched to a different support level while stuck.
   missionSupport: Record<string, SupportLevel>;
+  // Missions where the learner opened the reference solution after getting stuck.
+  solutionsViewed?: Record<string, boolean>;
   // Optional pre-submit confidence judgments recorded for self-calibration.
   confidenceLog: ConfidenceRecord[];
 }
@@ -54,11 +61,12 @@ export type Action =
   | { type: "start"; profile: Profile; missionId: string }
   | { type: "set-support"; support: SupportLevel | "adaptive" }
   | { type: "pin-support"; missionId: string; support: SupportLevel }
+  | { type: "view-solution"; missionId: string }
   | { type: "open"; missionId: string }
   | { type: "edit"; missionId: string; code: string }
   | { type: "reset-code"; missionId: string }
   | { type: "reveal-hint"; missionId: string }
-  | { type: "submitted"; missionId: string; passed: boolean; support: SupportLevel; alsoRestores: string[]; confidence?: Confidence; now?: string }
+  | { type: "submitted"; missionId: string; passed: boolean; support: SupportLevel; alsoRestores: string[]; confidence?: Confidence; solutionViewed?: boolean; now?: string }
   | { type: "replay"; missionId: string }
   | { type: "change-profile" }
   | { type: "load"; save: SaveData }
@@ -75,6 +83,7 @@ export function emptySave(): SaveData {
     completions: {},
     reviews: {},
     missionSupport: {},
+    solutionsViewed: {},
     confidenceLog: [],
   };
 }
@@ -133,6 +142,11 @@ export function reducer(save: SaveData, action: Action): SaveData {
         missionSupport: { ...save.missionSupport, [action.missionId]: action.support },
         drafts: without(save.drafts, action.missionId),
       };
+    case "view-solution":
+      return {
+        ...save,
+        solutionsViewed: { ...(save.solutionsViewed ?? {}), [action.missionId]: true },
+      };
     case "open":
       return { ...save, currentMission: action.missionId };
     case "edit":
@@ -144,7 +158,7 @@ export function reducer(save: SaveData, action: Action): SaveData {
       return { ...save, hintsRevealed: { ...save.hintsRevealed, [action.missionId]: revealed } };
     }
     case "submitted": {
-      const { missionId, passed, support, alsoRestores, confidence } = action;
+      const { missionId, passed, support, alsoRestores, confidence, solutionViewed } = action;
       const at = action.now ?? new Date().toISOString();
       const submits = (save.submits[missionId] ?? 0) + 1;
       const confidenceLog = confidence
@@ -154,8 +168,17 @@ export function reducer(save: SaveData, action: Action): SaveData {
       if (!passed) return next;
 
       const hintsUsed = save.hintsRevealed[missionId] ?? 0;
+      const usedSolution = Boolean(solutionViewed || save.solutionsViewed?.[missionId]);
       const completions = { ...save.completions };
-      completions[missionId] = [...(completions[missionId] ?? []), { support, hintsUsed, submits, at, viaAssessment: false }];
+      const completion: Completion = {
+        support,
+        hintsUsed,
+        submits,
+        at,
+        viaAssessment: false,
+        ...(usedSolution ? { solutionViewed: true } : {}),
+      };
+      completions[missionId] = [...(completions[missionId] ?? []), completion];
       for (const id of alsoRestores) {
         if (!completions[id]?.length) completions[id] = [{ support, hintsUsed: 0, submits: 0, at, viaAssessment: true }];
       }
@@ -168,6 +191,7 @@ export function reducer(save: SaveData, action: Action): SaveData {
         hintsRevealed: without(save.hintsRevealed, action.missionId),
         submits: without(save.submits, action.missionId),
         missionSupport: without(save.missionSupport, action.missionId),
+        solutionsViewed: without(save.solutionsViewed ?? {}, action.missionId),
       };
     case "change-profile":
       return { ...save, profile: null };
@@ -187,8 +211,24 @@ export function parseSave(raw: string): SaveData | null {
     for (const key of ["drafts", "hintsRevealed", "submits", "completions"] as const) {
       if (typeof data[key] !== "object" || data[key] === null) return null;
     }
-    if (data.missionSupport !== undefined && (typeof data.missionSupport !== "object" || data.missionSupport === null)) {
+    if (data.missionSupport !== undefined && (typeof data.missionSupport !== "object" || data.missionSupport === null || Array.isArray(data.missionSupport))) {
       return null;
+    }
+    if (data.solutionsViewed !== undefined) {
+      if (typeof data.solutionsViewed !== "object" || data.solutionsViewed === null || Array.isArray(data.solutionsViewed)) {
+        return null;
+      }
+      for (const value of Object.values(data.solutionsViewed)) {
+        if (typeof value !== "boolean") return null;
+      }
+    }
+    if (data.profile?.trackSupport !== undefined) {
+      const ts = data.profile.trackSupport;
+      if (!ts || typeof ts !== "object" || Array.isArray(ts)) return null;
+      for (const [track, level] of Object.entries(ts)) {
+        if (!["python", "javascript", "typescript", "sql"].includes(track)) return null;
+        if (level !== "guided" && level !== "standard" && level !== "challenge") return null;
+      }
     }
     if (data.reviews !== undefined) {
       if (!data.reviews || typeof data.reviews !== "object" || Array.isArray(data.reviews)) return null;

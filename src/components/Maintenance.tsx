@@ -1,4 +1,6 @@
 import { useEffect, useRef, type Dispatch } from "react";
+import { regionOf } from "../content";
+import { regionMeta } from "../content/regions";
 import type { MaintenanceCall } from "../game/maintenance";
 import type { Action } from "../game/save";
 import { dueIn } from "../game/time";
@@ -26,7 +28,10 @@ export function Maintenance({ calls, now, dispatch, onOpen }: Props) {
   const renderCall = ({ skill, mission, state }: MaintenanceCall, due: boolean) => (
     <li key={skill}>
       <div>
-        <strong>{mission.title}</strong>
+        <div className="maintenance-title-row">
+          <span className="act-plate">{regionMeta(regionOf(mission)).act}</span>
+          <strong>{mission.title}</strong>
+        </div>
         <span className="note">
           {mission.system}. {due ? (state.active ? "In progress." : "Ready now.") : `Arrives ${dueIn(state.dueAt, now)}.`}
         </span>
@@ -59,7 +64,7 @@ export function Maintenance({ calls, now, dispatch, onOpen }: Props) {
       <div className="maintenance-body">
         <p>Short return visits that keep earlier skills working. Calls never block your campaign or undo a repair.</p>
         {calls.length === 0 ? (
-          <p className="note">Your first call arrives a day after you finish Restore power.</p>
+          <p className="note">Your first maintenance call arrives a day after you restore a system that unlocks spaced review.</p>
         ) : (
           <>
             {ready.length > 0 && (

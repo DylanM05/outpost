@@ -633,6 +633,8 @@ def _split_sql_statements(sql_text):
     buf = []
     i = 0
     n = len(sql_text)
+    line = 1
+    stmt_start_line = None
     in_trigger = False
     block_depth = 0
     case_depth = 0
@@ -646,21 +648,29 @@ def _split_sql_statements(sql_text):
             i += 2
             while i < n and sql_text[i] != "\n":
                 i += 1
-            buf.append(sql_text[start:i])
+            if stmt_start_line is not None:
+                buf.append(sql_text[start:i])
             continue
         if ch == "/" and nxt == "*":
             start = i
             i += 2
             while i < n and not (sql_text[i] == "*" and (i + 1 < n and sql_text[i + 1] == "/")):
+                if sql_text[i] == "\n":
+                    line += 1
                 i += 1
             i = min(n, i + 2)
-            buf.append(sql_text[start:i])
+            if stmt_start_line is not None:
+                buf.append(sql_text[start:i])
             continue
         if ch in ("'", '"', chr(96)):
+            if stmt_start_line is None:
+                stmt_start_line = line
             quote = ch
             start = i
             i += 1
             while i < n:
+                if sql_text[i] == "\n":
+                    line += 1
                 if sql_text[i] == quote:
                     if i + 1 < n and sql_text[i + 1] == quote:
                         i += 2
@@ -671,6 +681,8 @@ def _split_sql_statements(sql_text):
             buf.append(sql_text[start:i])
             continue
         if ch.isalpha() or ch == "_":
+            if stmt_start_line is None:
+                stmt_start_line = line
             start = i
             while i < n and (sql_text[i].isalnum() or sql_text[i] == "_"):
                 i += 1
@@ -695,20 +707,46 @@ def _split_sql_statements(sql_text):
             buf.append(ch)
             stmt = "".join(buf).strip()
             if _sql_strip_comments_and_strings(stmt, keep_strings=True).strip("; \t\r\n"):
-                statements.append(stmt)
+                statements.append((stmt, stmt_start_line or line))
             buf = []
+            stmt_start_line = None
             in_trigger = False
             case_depth = 0
             word_tokens = []
             i += 1
             continue
-        buf.append(ch)
+        if stmt_start_line is None and not ch.isspace():
+            stmt_start_line = line
+        if ch == "\n":
+            line += 1
+        if stmt_start_line is not None:
+            buf.append(ch)
         i += 1
 
     tail = "".join(buf).strip()
     if _sql_strip_comments_and_strings(tail, keep_strings=True).strip("; \t\r\n"):
-        statements.append(tail)
+        statements.append((tail, stmt_start_line or line))
     return statements
+
+
+def _sql_error_line(raw_stmt, start_line, message):
+    # SQLite errors inside multi-line statements often report: near "<token>": ...
+    # Map start_line down to the token line when possible, else the statement start.
+    m = re.search(r'near "([^"]+)"', str(message))
+    if m and m.group(1):
+        token = m.group(1)
+        is_quoted = token[0] in ("'", '"')
+        cleaned = _sql_strip_comments_and_strings(raw_stmt, keep_strings=is_quoted)
+        pos = -1
+        if re.fullmatch(r"\w+", token):
+            hit = re.search(r"\b" + re.escape(token) + r"\b", cleaned)
+            if hit:
+                pos = hit.start()
+        else:
+            pos = cleaned.find(token)
+        if pos != -1:
+            return start_line + cleaned[:pos].count("\n")
+    return start_line
 
 
 def _format_sql_table(columns, rows):
@@ -720,17 +758,30 @@ def _format_sql_table(columns, rows):
     return "\n".join(lines) + "\n"
 
 
+class _SqlExecError(Exception):
+    def __init__(self, orig, stmt, start_line):
+        super().__init__(str(orig))
+        self.orig = orig
+        self.stmt = stmt
+        self.start_line = start_line
+
+
 def _exec_sql_script(conn, sql_text):
     last_columns = []
     last_rows = []
+    tables = []
     outputs = []
-    for stmt in _split_sql_statements(sql_text):
-        cur = conn.execute(stmt)
+    for stmt, start_line in _split_sql_statements(sql_text):
+        try:
+            cur = conn.execute(stmt)
+        except sqlite3.Error as exc:
+            raise _SqlExecError(exc, stmt, start_line) from exc
         if cur.description is not None:
             last_columns = [col[0] for col in cur.description]
             last_rows = [list(row) for row in cur.fetchall()]
+            tables.append((last_columns, last_rows))
             outputs.append(_format_sql_table(last_columns, last_rows))
-    return last_columns, last_rows, "\n".join(o.rstrip("\n") for o in outputs if o) + ("\n" if outputs else "")
+    return last_columns, last_rows, tables, "\n".join(o.rstrip("\n") for o in outputs if o) + ("\n" if outputs else "")
 
 
 def run_sql_mission(user_sql, setup_sql, check_code, hidden_code=""):
@@ -743,11 +794,17 @@ def run_sql_mission(user_sql, setup_sql, check_code, hidden_code=""):
             conn.executescript(setup_sql)
         last_columns = []
         last_rows = []
+        tables = []
         output_text = ""
         try:
-            last_columns, last_rows, output_text = _exec_sql_script(conn, user_sql)
-        except sqlite3.Error as exc:
-            result["error"] = {"phase": "runtime", "type": type(exc).__name__, "message": str(exc), "line": None}
+            last_columns, last_rows, tables, output_text = _exec_sql_script(conn, user_sql)
+        except _SqlExecError as err:
+            result["error"] = {
+                "phase": "runtime",
+                "type": type(err.orig).__name__,
+                "message": str(err.orig),
+                "line": _sql_error_line(err.stmt, err.start_line, str(err.orig)),
+            }
 
         if len(output_text) > _OUTPUT_LIMIT:
             result["stdout"] = output_text[:_OUTPUT_LIMIT]
@@ -756,6 +813,17 @@ def run_sql_mission(user_sql, setup_sql, check_code, hidden_code=""):
             result["stdout"] = output_text
 
         if result["error"] is None:
+            for cols, table_rows in tables:
+                result["events"].append({
+                    "kind": "sql_table",
+                    "data": {
+                        "columns": cols,
+                        "rows": [_plain(r) for r in table_rows[:200]],
+                        "totalRows": len(table_rows),
+                        "truncated": len(table_rows) > 200,
+                        "hidden": False,
+                    },
+                })
             sys.stdout = _CappedOutput()
             stripped_upper = _sql_strip_comments_and_strings(user_sql).upper()
 
@@ -769,8 +837,11 @@ def run_sql_mission(user_sql, setup_sql, check_code, hidden_code=""):
                 return [dict(zip(cols, r)) for r in cur.fetchall()]
 
             def run_user_sql():
-                _, new_rows, _ = _exec_sql_script(conn, user_sql)
-                return new_rows
+                try:
+                    _, new_rows, _, _ = _exec_sql_script(conn, user_sql)
+                    return new_rows
+                except _SqlExecError as err:
+                    raise err.orig from None
 
             def sql_uses(*keywords):
                 for kw in keywords:

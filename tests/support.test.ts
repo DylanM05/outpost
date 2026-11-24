@@ -1,7 +1,20 @@
 import { expect, test } from "vitest";
-import { allMissions, missions } from "../src/content";
+import { allMissions, missions, reviewMissions } from "../src/content";
 import type { SupportLevel } from "../src/content/parse";
-import { codeFor, easierStart, isUnlocked, lessonStartsOpen, skillSupport, supportChoice } from "../src/game/rules";
+import { DAY, maintenanceCalls } from "../src/game/maintenance";
+import {
+  canViewSolution,
+  codeFor,
+  easierStart,
+  isIndependent,
+  isUnlocked,
+  lessonStartsOpen,
+  skillSupport,
+  solvedCleanly,
+  starterChangesAtLevel,
+  STUCK_SUBMITS,
+  supportChoice,
+} from "../src/game/rules";
 import { emptySave, parseSave, reducer, type Completion, type SaveData } from "../src/game/save";
 
 const byId = (id: string) => allMissions.find((m) => m.id === id)!;
@@ -161,4 +174,112 @@ test("saves from before adaptive support load with an empty switch list", () => 
   const loaded = parseSave(JSON.stringify(old))!;
   expect(loaded.missionSupport).toEqual({});
   expect(supportChoice(byId("restore-power"), loaded, allMissions).level).toBe("standard");
+});
+
+test("trackSupport sets per-track starting levels without overriding unrelated tracks and respects mission track for shared skills", () => {
+  const save: SaveData = {
+    ...emptySave(),
+    profile: {
+      experience: "experienced",
+      background: ["python"],
+      support: "challenge",
+      trackSupport: { python: "challenge", javascript: "standard", typescript: "standard", sql: "standard" },
+    },
+  };
+  const jsMission = missions.find((m) => m.region === "act25" && m.kind === "code")!;
+  const sqlMission = missions.find((m) => m.region === "act28" && m.kind === "code")!;
+  expect(supportChoice(byId("restore-power"), save, allMissions).level).toBe("challenge");
+  expect(supportChoice(jsMission, save, allMissions).level).toBe("standard");
+  expect(supportChoice(sqlMission, save, allMissions).level).toBe("standard");
+
+  // Shared skill ("reading-code") on a JS mission should use JS trackSupport, not Python's.
+  const jsShared = { ...jsMission, skills: ["reading-code" as const] };
+  const jsExperiencedSave: SaveData = {
+    ...emptySave(),
+    profile: {
+      experience: "experienced",
+      background: ["javascript"],
+      support: "challenge",
+      trackSupport: { python: "standard", javascript: "challenge", typescript: "standard", sql: "standard" },
+    },
+  };
+  expect(supportChoice(jsShared, jsExperiencedSave, allMissions).level).toBe("challenge");
+});
+
+test("parseSave validates and round-trips solutionsViewed and trackSupport", () => {
+  const save: SaveData = {
+    ...emptySave(),
+    profile: {
+      experience: "experienced",
+      background: ["javascript"],
+      support: "challenge",
+      trackSupport: { python: "standard", javascript: "challenge", typescript: "standard", sql: "standard" },
+    },
+    solutionsViewed: { "charge-the-cells": true },
+  };
+  const parsed = parseSave(JSON.stringify(save));
+  expect(parsed?.profile?.trackSupport).toEqual(save.profile?.trackSupport);
+  expect(parsed?.solutionsViewed).toEqual({ "charge-the-cells": true });
+
+  expect(parseSave(JSON.stringify({ ...save, solutionsViewed: { x: "yes" } }))).toBeNull();
+  expect(
+    parseSave(JSON.stringify({ ...save, profile: { ...save.profile, trackSupport: { python: "expert" } } })),
+  ).toBeNull();
+  expect(
+    parseSave(JSON.stringify({ ...save, profile: { ...save.profile, trackSupport: [] } })),
+  ).toBeNull();
+});
+
+test("reference solution unlocks only after retries and hints, excludes assessments, marks completion as practice, and blocks maintenance independentAt", () => {
+  const mission = byId("charge-the-cells");
+  const assessment = missions.find((m) => m.assessment)!;
+  let save = player("standard");
+  expect(canViewSolution(mission, save)).toBe(false);
+
+  for (let i = 0; i < STUCK_SUBMITS; i++) {
+    save = reducer(save, { type: "submitted", missionId: mission.id, passed: false, support: "standard", alsoRestores: [] });
+    save = reducer(save, { type: "submitted", missionId: assessment.id, passed: false, support: "challenge", alsoRestores: [] });
+  }
+  for (let i = 0; i < assessment.hints.length; i++) {
+    save = reducer(save, { type: "reveal-hint", missionId: assessment.id });
+  }
+  expect(canViewSolution(assessment, save)).toBe(false);
+  expect(canViewSolution(mission, save)).toBe(false);
+
+  for (let i = 0; i < mission.hints.length; i++) {
+    save = reducer(save, { type: "reveal-hint", missionId: mission.id });
+  }
+  expect(canViewSolution(mission, save)).toBe(true);
+
+  save = reducer(save, { type: "view-solution", missionId: mission.id });
+  expect(save.solutionsViewed?.[mission.id]).toBe(true);
+
+  // Even without action.solutionViewed, reducer reads save.solutionsViewed[missionId]
+  save = reducer(save, {
+    type: "submitted",
+    missionId: mission.id,
+    passed: true,
+    support: "standard",
+    alsoRestores: [],
+    now: new Date(Date.now() - 2 * DAY).toISOString(),
+  });
+  const completion = save.completions[mission.id]?.at(-1)!;
+  expect(completion.solutionViewed).toBe(true);
+  expect(isIndependent(completion)).toBe(false);
+  expect(solvedCleanly(completion)).toBe(false);
+
+  const prereqCall = maintenanceCalls(missions, reviewMissions, {
+    ...emptySave(),
+    profile: { experience: "new", background: [], support: "standard" },
+    completions: {
+      "restore-power": [{ support: "standard", hintsUsed: 0, submits: 1, at: completion.at, viaAssessment: false, solutionViewed: true }],
+    },
+  })[0];
+  expect(prereqCall?.state.independentAt).toBeUndefined();
+
+  expect(starterChangesAtLevel(byId("charge-the-cells"), "standard", "guided")).toBe(true);
+  expect(starterChangesAtLevel(byId("first-fault"), "standard", "guided")).toBe(false);
+
+  save = reducer(save, { type: "replay", missionId: mission.id });
+  expect(save.solutionsViewed?.[mission.id]).toBeUndefined();
 });

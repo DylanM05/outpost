@@ -1,6 +1,8 @@
-import { useEffect, useLayoutEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useState } from "react";
 import { missions } from "../content";
+import type { Language } from "../content/parse";
 import { REGIONS } from "../content/regions";
+import { fileNameFor } from "./Bench";
 import { MOD_KEY } from "./Results";
 
 const TOUR_KEY = "outpost.tour.v1";
@@ -30,7 +32,9 @@ export interface TourStep {
   tip: string;
 }
 
-export const TOUR_STEPS: readonly TourStep[] = [
+export function tourStepsFor(language: Language = "python"): readonly TourStep[] {
+  const fileName = fileNameFor(language);
+  return [
   {
     id: "brief",
     target: "brief",
@@ -44,7 +48,7 @@ export const TOUR_STEPS: readonly TourStep[] = [
     target: "bench-controls",
     pane: "bench",
     title: "Run examples, then submit",
-    body: `Write your solution in main.py. Click Run (${MOD_KEY}+Enter) as often as you like to test against the visible examples and inspect printed output.`,
+    body: `Write your solution in ${fileName}. Click Run (${MOD_KEY}+Enter) as often as you like to test against the visible examples and inspect printed output.`,
     tip: `When everything looks right, click Submit (${MOD_KEY}+Shift+Enter) to run the hidden checks and bring the repair online.`,
   },
   {
@@ -69,7 +73,10 @@ export const TOUR_STEPS: readonly TourStep[] = [
     body: "Support adapts how much starter code you receive as you solve missions cleanly. Skills tracks what you've demonstrated, retained, and calibrated.",
     tip: "Open Progress anytime to switch Day or Night shift, download a backup, or change your experience answers.",
   },
-];
+  ];
+}
+
+export const TOUR_STEPS: readonly TourStep[] = tourStepsFor("python");
 
 interface Rect {
   top: number;
@@ -80,17 +87,19 @@ interface Rect {
 
 interface Props {
   open: boolean;
+  language?: Language;
   onClose(): void;
   onFocusPane?: (pane: "brief" | "bench" | "plant") => void;
 }
 
-export function ControlRoomTour({ open, onClose, onFocusPane }: Props) {
+export function ControlRoomTour({ open, language = "python", onClose, onFocusPane }: Props) {
   const [stepIndex, setStepIndex] = useState(0);
   const [rect, setRect] = useState<Rect | null>(null);
   const [viewport, setViewport] = useState({ width: 1280, height: 800 });
 
-  const step = TOUR_STEPS[stepIndex] ?? TOUR_STEPS[0];
-  const isLast = stepIndex === TOUR_STEPS.length - 1;
+  const steps = useMemo(() => tourStepsFor(language), [language]);
+  const step = steps[stepIndex] ?? steps[0];
+  const isLast = stepIndex === steps.length - 1;
 
   useEffect(() => {
     if (open) setStepIndex(0);
@@ -151,7 +160,7 @@ export function ControlRoomTour({ open, onClose, onFocusPane }: Props) {
           markTourSeen();
           onClose();
         } else {
-          setStepIndex((i) => Math.min(i + 1, TOUR_STEPS.length - 1));
+          setStepIndex((i) => Math.min(i + 1, steps.length - 1));
         }
       } else if (event.key === "ArrowLeft") {
         event.preventDefault();
@@ -160,7 +169,7 @@ export function ControlRoomTour({ open, onClose, onFocusPane }: Props) {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [open, isLast, onClose]);
+  }, [open, isLast, steps.length, onClose]);
 
   if (!open) return null;
 
@@ -193,7 +202,7 @@ export function ControlRoomTour({ open, onClose, onFocusPane }: Props) {
       <div className="tour-card" style={cardStyle}>
         <div className="tour-head">
           <span className="act-plate">
-            Step {stepIndex + 1} of {TOUR_STEPS.length}
+            Step {stepIndex + 1} of {steps.length}
           </span>
           <button type="button" className="link tour-skip" onClick={finish}>
             Skip tour
@@ -216,7 +225,7 @@ export function ControlRoomTour({ open, onClose, onFocusPane }: Props) {
             className="primary"
             onClick={() => {
               if (isLast) finish();
-              else setStepIndex((i) => Math.min(i + 1, TOUR_STEPS.length - 1));
+              else setStepIndex((i) => Math.min(i + 1, steps.length - 1));
             }}
           >
             {isLast ? "Start repairing" : "Next"}

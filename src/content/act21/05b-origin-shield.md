@@ -32,7 +32,7 @@ Implement `OriginShield(fetcher, ttl)` with `fetch_batch(requests, now)` and `or
 ## Hints
 
 1. Inside `fetch_batch`, keep a per-batch `in_flight = {}` dict mapping `key -> value`: if `key in in_flight`, return `source = "COALESCED"` without calling `fetcher` again!
-2. Check fresh cache BEFORE `in_flight`? Wait — if you store into `self.cache` at the end of the batch (or check `in_flight` first before `self.cache`!), then subsequent requests in the *same* batch report `"COALESCED"` while requests in a *later* batch report `"CACHE"`! Checking `in_flight` first makes that super clean.
+2. Check `in_flight` before `self.cache` (or write new entries into `self.cache` at the end of the batch): that way later requests in the *same* batch report `"COALESCED"`, while requests in a *later* batch within `ttl` report `"CACHE"`.
 
 ## Starter: guided
 

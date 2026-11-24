@@ -67,7 +67,7 @@ export function Bench(props: BenchProps) {
   }
 }
 
-function fileNameFor(language: Mission["language"]): string {
+export function fileNameFor(language: Mission["language"]): string {
   if (language === "javascript") return "main.js";
   if (language === "typescript") return "main.ts";
   if (language === "sql") return "query.sql";
@@ -331,7 +331,7 @@ function PredictResults({ mission, run, busy, runnerStatus, systemOnline, next, 
     return (
       <>
         <RestoredBanner mission={mission} systemOnline={systemOnline} next={next} onOpen={onOpen} />
-        <Output result={result} title="The program printed" />
+        <Output result={result} title="The program printed" plain />
       </>
     );
   }

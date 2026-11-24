@@ -1,21 +1,4 @@
 ---
-id: sql-build-sql-ledger-engine
-kind: code
-language: sql
-title: Build an end-to-end transactional ledger schema with triggers, covering indexes, and window views
-system: Schema audit
-symbol: controller
-scene: tests
-assessment: true
-skills: sql-windows-ctes, sql-schema-dml, sql-indexes-transactions
----
-
-## Briefing
-
-Wait — check the ID! Let's make sure the ID in frontmatter is `id: sql-build-ledger-engine` (exact ID from brief #4!). Let's fix that in the block right below or wait — let's check what we wrote above: we wrote `id: sql-build-sql-ledger-engine` on line 2 of `06a-build-sql-ledger-engine.md`! Let's post `act29/06a-build-sql-ledger-engine.md` with `id: sql-build-ledger-engine` right here at the bottom of this message so `@coordinator` has the exact `id: sql-build-ledger-engine`!
-
-=== FILE: act29/06a-build-sql-ledger-engine.md ===
----
 id: sql-build-ledger-engine
 kind: code
 language: sql

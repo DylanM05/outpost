@@ -90,10 +90,10 @@ const SUPPORT_ORDER: SupportLevel[] = ["guided", "standard", "challenge"];
 const lessSupport = (level: SupportLevel) => SUPPORT_ORDER[Math.min(SUPPORT_ORDER.indexOf(level) + 1, 2)];
 export const moreSupport = (level: SupportLevel) => SUPPORT_ORDER[Math.max(SUPPORT_ORDER.indexOf(level) - 1, 0)];
 
-// No hints and at most two submissions.
-export const solvedCleanly = (c: Completion) => c.hintsUsed === 0 && c.submits <= 2;
-// Two or more hints, or four or more submissions before passing.
-export const struggled = (c: Completion) => c.hintsUsed >= 2 || c.submits >= 4;
+// No hints, no viewed reference solution, and at most two submissions.
+export const solvedCleanly = (c: Completion) => !c.solutionViewed && c.hintsUsed === 0 && c.submits <= 2;
+// Two or more hints, four or more submissions, or viewing the reference solution before passing.
+export const struggled = (c: Completion) => Boolean(c.solutionViewed) || c.hintsUsed >= 2 || c.submits >= 4;
 
 // The failed submissions after which a mission offers a more complete start.
 export const STUCK_SUBMITS = 3;
@@ -106,13 +106,15 @@ export interface SupportStep {
 
 // Support is about how much code you're given to write, so only code
 // missions move it: tracing a program cleanly says little about writing one.
-export function skillSupport(catalog: Mission[], save: SaveData, skill: SkillId, except?: string) {
+export function skillSupport(catalog: Mission[], save: SaveData, skill: SkillId, except?: string, missionTrack?: TrackId) {
+  const firstCampaign = catalog.find((m) => !m.reviewSkill && m.skills.includes(skill));
+  const track = missionTrack ?? (firstCampaign ? trackOfRegion(firstCampaign.region) : undefined);
   const history = catalog
     .filter((m) => m.id !== except && m.kind === "code" && m.skills.includes(skill))
     .flatMap((m) => (save.completions[m.id] ?? []).filter((c) => !c.viaAssessment).map((c) => ({ missionId: m.id, c })))
     .sort((a, b) => a.c.at.localeCompare(b.c.at));
 
-  let level: SupportLevel = save.profile?.support ?? "guided";
+  let level: SupportLevel = (track && save.profile?.trackSupport?.[track]) ?? save.profile?.support ?? "guided";
   let step: SupportStep | null = null;
   for (const { missionId, c } of history) {
     const reason = solvedCleanly(c) ? "clean" : struggled(c) ? "struggle" : null;
@@ -143,8 +145,9 @@ export function supportChoice(mission: Mission, save: SaveData, catalog: Mission
   // never harder to start than its least-practiced part. Its own past
   // completions don't count, so the level doesn't change under a replay.
   let choice: SupportChoice | null = null;
+  const missionTrack = mission.region ? trackOfRegion(mission.region) : undefined;
   for (const skill of mission.skills) {
-    const { level, step } = skillSupport(catalog, save, skill, mission.id);
+    const { level, step } = skillSupport(catalog, save, skill, mission.id, missionTrack);
     if (!choice || SUPPORT_ORDER.indexOf(level) < SUPPORT_ORDER.indexOf(choice.level)) {
       choice = { level, source: "adaptive", step };
     }
@@ -159,6 +162,20 @@ export function easierStart(mission: Mission, save: SaveData, choice: SupportCho
   if ((save.submits[mission.id] ?? 0) < STUCK_SUBMITS) return null;
   const level = moreSupport(choice.level);
   return mission.starters[level] !== mission.starters[choice.level] ? level : null;
+}
+
+// Available after exhausting every hint and several failed submissions so a
+// genuinely stuck learner can inspect the reference solution (as practice).
+export function canViewSolution(mission: Mission, save: SaveData): boolean {
+  if (mission.kind !== "code" || mission.assessment || mission.reviewSkill || isRestored(save, mission.id)) return false;
+  if (!mission.solution.trim()) return false;
+  const submits = save.submits[mission.id] ?? 0;
+  const revealed = save.hintsRevealed[mission.id] ?? 0;
+  return submits >= STUCK_SUBMITS && revealed >= mission.hints.length;
+}
+
+export function starterChangesAtLevel(mission: Mission, level: SupportLevel, prevLevel: SupportLevel): boolean {
+  return mission.starters[level] !== mission.starters[prevLevel];
 }
 
 export function supportFor(mission: Mission, save: SaveData, catalog: Mission[]): SupportLevel {
@@ -211,9 +228,15 @@ export function nextMission(missions: Mission[], save: SaveData, from: number, u
 
 export type Evidence = "retained" | "demonstrated" | "practiced" | "untried";
 
-// Independent means the player solved it without step-by-step code or hints.
+// Independent means the player solved it without step-by-step code, hints, or opening the reference solution.
 export function isIndependent(completion: Completion): boolean {
-  return !completion.viaAssessment && completion.support !== "guided" && completion.hintsUsed === 0 && (!completion.maintenance || completion.submits <= 2);
+  return (
+    !completion.viaAssessment &&
+    !completion.solutionViewed &&
+    completion.support !== "guided" &&
+    completion.hintsUsed === 0 &&
+    (!completion.maintenance || completion.submits <= 2)
+  );
 }
 
 export interface SkillReport {
