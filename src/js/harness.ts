@@ -411,7 +411,17 @@ function explainCheckError(err: unknown, userLineCount: number, headerLines: num
   return String(err);
 }
 
-export async function runJsMission(userCode: string, checkCode: string, hiddenCode = ""): Promise<RunResult> {
+export interface JsRunOptions {
+  rawSource?: string;
+  extraHelpers?: (record: (label: string, passed: boolean, detail?: string) => void) => Record<string, unknown>;
+}
+
+export async function runJsMission(
+  userCode: string,
+  checkCode: string,
+  hiddenCode = "",
+  options?: JsRunOptions,
+): Promise<RunResult> {
   const collector = makeOutputCollector();
   const result: RunResult = {
     stdout: "",
@@ -570,6 +580,10 @@ export async function runJsMission(userCode: string, checkCode: string, hiddenCo
       return p;
     };
 
+    const extras = options?.extraHelpers ? options.extraHelpers(record) : {};
+    const extraNames = Object.keys(extras);
+    const extraValues = extraNames.map((k) => extras[k]);
+
     const checkFn = new AsyncFunction(
       "output",
       "lines",
@@ -581,6 +595,7 @@ export async function runJsMission(userCode: string, checkCode: string, hiddenCo
       "expectThrows",
       "deepEqual",
       "console",
+      ...extraNames,
       `"use strict";\n${code}`,
     );
 
@@ -588,7 +603,7 @@ export async function runJsMission(userCode: string, checkCode: string, hiddenCo
       await checkFn(
         result.stdout,
         lines,
-        userCode,
+        options?.rawSource ?? userCode,
         namespace,
         get,
         check,
@@ -596,6 +611,7 @@ export async function runJsMission(userCode: string, checkCode: string, hiddenCo
         expectThrows,
         deepEqual,
         silentCollector.consoleObj,
+        ...extraValues,
       );
       await Promise.all(pendingChecks);
     } catch (err) {

@@ -153,8 +153,15 @@ const sqlLanguage = StreamLanguage.define<{ inBlockComment: boolean }>({
 
 function createState(doc: string, props: RefObject<Props>): EditorState {
   const lang = props.current.language ?? "python";
-  const twoSpace = lang === "javascript" || lang === "sql";
-  const langExt = lang === "javascript" ? javascript() : lang === "sql" ? sqlLanguage : python();
+  const twoSpace = lang === "javascript" || lang === "typescript" || lang === "sql";
+  const langExt =
+    lang === "javascript"
+      ? javascript()
+      : lang === "typescript"
+        ? javascript({ typescript: true })
+        : lang === "sql"
+          ? sqlLanguage
+          : python();
   const extensions: Extension[] = [
     lineNumbers(),
     highlightActiveLineGutter(),

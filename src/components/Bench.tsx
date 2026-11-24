@@ -69,12 +69,14 @@ export function Bench(props: BenchProps) {
 
 function fileNameFor(language: Mission["language"]): string {
   if (language === "javascript") return "main.js";
+  if (language === "typescript") return "main.ts";
   if (language === "sql") return "query.sql";
   return "main.py";
 }
 
 function runtimeNameFor(language: Mission["language"]): string {
   if (language === "javascript") return "JavaScript";
+  if (language === "typescript") return "TypeScript";
   if (language === "sql") return "SQLite";
   return "Python";
 }

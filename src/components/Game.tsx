@@ -22,6 +22,7 @@ import { applyTheme, loadTheme, type ThemePreference } from "../game/theme";
 import { passedAll } from "../python/harness";
 import { PythonRunner, type RunnerStatus } from "../python/runner";
 import { JsRunner } from "../js/runner";
+import { TsRunner } from "../ts/runner";
 import { relay } from "../relay/session";
 import { AtlasDialog } from "./AtlasDialog";
 import { Bench, type RunMode, type RunRecord } from "./Bench";
@@ -39,6 +40,8 @@ let sharedRunner: PythonRunner | null = null;
 const getRunner = () => (sharedRunner ??= new PythonRunner());
 let sharedJsRunner: JsRunner | null = null;
 const getJsRunner = () => (sharedJsRunner ??= new JsRunner());
+let sharedTsRunner: TsRunner | null = null;
+const getTsRunner = () => (sharedTsRunner ??= new TsRunner());
 
 let runCount = 0;
 
@@ -54,6 +57,7 @@ interface Props {
 export function Game({ save, profile, dispatch, initialDebugMode }: Props) {
   const [pyRunnerStatus, setPyRunnerStatus] = useState<RunnerStatus>("loading");
   const [jsRunnerStatus, setJsRunnerStatus] = useState<RunnerStatus>("ready");
+  const [tsRunnerStatus, setTsRunnerStatus] = useState<RunnerStatus>("ready");
   const [busy, setBusy] = useState<RunMode | null>(null);
   const [lastRun, setLastRun] = useState<RunRecord | null>(null);
   const [energized, setEnergized] = useState<string | null>(null);
@@ -104,11 +108,16 @@ export function Game({ save, profile, dispatch, initialDebugMode }: Props) {
   const mission = selected?.reviewSkill && save.reviews[selected.reviewSkill]?.missionId !== selected.id
     ? missions[index] : selected ?? missions[index];
   const isJsMission = mission.language === "javascript";
+  const isTsMission = mission.language === "typescript";
   useEffect(() => {
     if (!isJsMission) return;
     return getJsRunner().subscribe(setJsRunnerStatus);
   }, [isJsMission]);
-  const runnerStatus = isJsMission ? jsRunnerStatus : pyRunnerStatus;
+  useEffect(() => {
+    if (!isTsMission) return;
+    return getTsRunner().subscribe(setTsRunnerStatus);
+  }, [isTsMission]);
+  const runnerStatus = isJsMission ? jsRunnerStatus : isTsMission ? tsRunnerStatus : pyRunnerStatus;
   const calls = maintenanceCalls(missions, reviewMissions, save);
   const review = mission.reviewSkill ? save.reviews[mission.reviewSkill] : undefined;
   const support = supportChoice(mission, save, allMissions);
@@ -207,7 +216,11 @@ export function Game({ save, profile, dispatch, initialDebugMode }: Props) {
           ? predicting
             ? await getJsRunner().run(target.program, "")
             : await getJsRunner().run(code, target.checks, mode === "submit" ? target.hiddenChecks : "")
-          : predicting
+          : target.language === "typescript"
+            ? predicting
+              ? await getTsRunner().run(target.program, "")
+              : await getTsRunner().run(code, target.checks, mode === "submit" ? target.hiddenChecks : "")
+            : predicting
             ? await getRunner().run(target.program, "", "", target.language === "sql" ? { mode: "sql", setup: target.setup } : undefined)
             : await getRunner().run(
                 code,

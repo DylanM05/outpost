@@ -48,20 +48,25 @@ test("passing Kestrel Ridge's final mission doesn't restore the survey office", 
   expect(isUnlocked(missions, { ...save, profile: { ...save.profile!, experience: "new" } }, missions.indexOf(surveyMissions[0]))).toBe(true);
 });
 
-test("Python, JavaScript, and SQL tracks all start unlocked from day one for beginners", () => {
+test("Python, JavaScript, TypeScript, and SQL tracks all start unlocked from day one for beginners", () => {
   const beginner = player("new");
   const jsFirstRegion = regionsInTrack("javascript")[0];
   const jsFirstMission = missions.find((m) => m.region === jsFirstRegion.id)!;
+  const tsFirstRegion = regionsInTrack("typescript")[0];
+  const tsFirstMission = missions.find((m) => m.region === tsFirstRegion.id)!;
   const sqlFirstRegion = regionsInTrack("sql")[0];
   const sqlFirstMission = missions.find((m) => m.region === sqlFirstRegion.id)!;
 
   expect(regionEntry(missions, ridge, beginner)?.region).toBe(ridge);
   expect(regionEntry(missions, jsFirstRegion.id, beginner)).toBe(jsFirstMission);
   expect(trackEntry(missions, "javascript", beginner)).toBe(jsFirstMission);
+  expect(regionEntry(missions, tsFirstRegion.id, beginner)).toBe(tsFirstMission);
+  expect(trackEntry(missions, "typescript", beginner)).toBe(tsFirstMission);
   expect(regionEntry(missions, sqlFirstRegion.id, beginner)).toBe(sqlFirstMission);
   expect(trackEntry(missions, "sql", beginner)).toBe(sqlFirstMission);
-  // Second mission within JS and SQL still requires completing the first mission in that track.
+  // Second mission within each track still requires completing the first mission in that track.
   expect(isUnlocked(missions, beginner, missions.indexOf(jsFirstMission) + 1)).toBe(false);
+  expect(isUnlocked(missions, beginner, missions.indexOf(tsFirstMission) + 1)).toBe(false);
   expect(isUnlocked(missions, beginner, missions.indexOf(sqlFirstMission) + 1)).toBe(false);
 });
 

@@ -18,6 +18,7 @@ test("topbar uses a compact region switcher and track switcher instead of inline
   expect(html).toContain("track-switcher");
   expect(html).toContain("Python");
   expect(html).toContain("JS");
+  expect(html).toContain("TS");
   expect(html).toContain("SQL");
   expect(html).toContain("region-switcher");
   expect(html).toContain("Act I");
@@ -83,6 +84,22 @@ test("AtlasDialog scopes regions by learning track and exposes track tabs", () =
   expect(sqlHtml).toContain("SQL &amp; Databases");
   expect(sqlHtml).toContain("SQL I");
   expect(sqlHtml).toContain("The query vault");
+
+  const tsRegion = regionsInTrack("typescript")[0];
+  const tsHtml = renderToStaticMarkup(
+    <AtlasDialog
+      open
+      currentRegion={tsRegion.id}
+      currentMissionId={missions.find((m) => m.region === tsRegion.id)!.id}
+      missions={missions}
+      save={save}
+      onClose={() => {}}
+      onOpen={() => {}}
+    />,
+  );
+  expect(tsHtml).toContain("TypeScript");
+  expect(tsHtml).toContain("TS I");
+  expect(tsHtml).toContain("The type foundry");
 });
 
 test("SkillsDialog renders status filter pills with counts and act plates", () => {

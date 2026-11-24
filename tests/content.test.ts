@@ -7,6 +7,7 @@ import { SUPPORT_LEVELS, type Language } from "../src/content/parse";
 import { REGIONS } from "../src/content/regions";
 import { comparePrediction, outputLines } from "../src/game/predict";
 import { runJsMission } from "../src/js/harness";
+import { runTsMission } from "../src/ts/harness";
 import { HARNESS_PY, passedAll, type RunResult } from "../src/python/harness";
 
 let pyodide: PyodideInterface;
@@ -19,6 +20,9 @@ beforeAll(async () => {
 async function run(language: Language, code: string, checks: string, hidden = "", setup = ""): Promise<RunResult> {
   if (language === "javascript") {
     return runJsMission(code, checks, hidden);
+  }
+  if (language === "typescript") {
+    return runTsMission(code, checks, hidden);
   }
   if (language === "sql") {
     const runSqlMission = pyodide.globals.get("run_sql_mission");

@@ -64,9 +64,11 @@ export function RunProblem({
     ? "The relay terminal"
     : language === "javascript"
       ? "JavaScript"
-      : language === "sql"
-        ? "SQLite"
-        : "Python";
+      : language === "typescript"
+        ? "TypeScript"
+        : language === "sql"
+          ? "SQLite"
+          : "Python";
   return (
     <div className="fault-box">
       <h3>{runtimeLabel} stopped unexpectedly</h3>

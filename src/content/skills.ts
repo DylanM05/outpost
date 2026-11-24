@@ -420,6 +420,18 @@ export const SKILLS = {
     name: "SQL FTS5 search, FILTER pivots, and cohorts",
     summary: "Build trigger-synced FTS5 full-text indexes ranked by BM25, pivot aggregates with FILTER (WHERE ...), and compute retention cohort tables in pure SQL.",
   },
+  "ts-fundamentals": {
+    name: "TypeScript annotations, interfaces, and strict nulls",
+    summary: "Annotate functions, interfaces, readonly properties, and fixed-length tuples while handling null and undefined safely under strictNullChecks.",
+  },
+  "ts-narrowing-unions": {
+    name: "Discriminated unions, exhaustiveness, and type guards",
+    summary: "Model states with literal and discriminated unions, enforce exhaustiveness with never, and narrow unknown inputs with user-defined type predicates.",
+  },
+  "ts-generics-utilities": {
+    name: "TypeScript generics, keyof constraints, and utility types",
+    summary: "Write reusable generic functions and Result<T, E> containers constrained with extends and keyof, and transform object shapes with Partial, Pick, Omit, Record, and Readonly.",
+  },
 } as const;
 
 export type SkillId = keyof typeof SKILLS;

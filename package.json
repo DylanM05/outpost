@@ -31,6 +31,7 @@
     "pyodide": "314.0.7",
     "react": "19.3.1",
     "react-dom": "19.3.1",
+    "typescript-browser": "npm:typescript@^5.9.3",
     "v86": "0.5.473"
   },
   "devDependencies": {

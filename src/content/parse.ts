@@ -4,7 +4,7 @@ import { isSkillId, type SkillId } from "./skills";
 export const SUPPORT_LEVELS = ["guided", "standard", "challenge"] as const;
 export type SupportLevel = (typeof SUPPORT_LEVELS)[number];
 
-export const LANGUAGES = ["python", "javascript", "sql"] as const;
+export const LANGUAGES = ["python", "javascript", "sql", "typescript"] as const;
 export type Language = (typeof LANGUAGES)[number];
 
 // code: write a program that passes tests. predict: read a program and type

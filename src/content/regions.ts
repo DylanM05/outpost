@@ -1,7 +1,7 @@
 // Tracks group regions into independent learning paths. The first region of
 // every track is open from day one, so players can start on either path or
 // jump back and forth freely without losing their place.
-export type TrackId = "python" | "javascript" | "sql";
+export type TrackId = "python" | "javascript" | "typescript" | "sql";
 
 export interface Track {
   id: TrackId;
@@ -22,6 +22,12 @@ export const TRACKS: readonly Track[] = [
     name: "JavaScript",
     shortName: "JS",
     summary: "Modern JavaScript from fundamentals and closures through async concurrency, APIs, and reactive apps.",
+  },
+  {
+    id: "typescript",
+    name: "TypeScript",
+    shortName: "TS",
+    summary: "Strict TypeScript: type annotations, narrowing, discriminated unions, type guards, generics, and utility types.",
   },
   {
     id: "sql",
@@ -73,6 +79,7 @@ export const REGIONS: readonly Region[] = [
   { id: "act28", track: "sql", act: "SQL I", name: "The query vault", summary: "SQLite SELECT, filtering, aggregations, joins, and subqueries" },
   { id: "act29", track: "sql", act: "SQL II", name: "The ledger schema", summary: "Window functions, recursive CTEs, constraints, triggers, and indexes" },
   { id: "act30", track: "sql", act: "SQL III", name: "The transaction hall", summary: "Savepoints, FTS5 search, time-series windows, migrations, and pivots" },
+  { id: "act31", track: "typescript", act: "TS I", name: "The type foundry", summary: "Strict annotations, narrowing, discriminated unions, generics, and utility types" },
 ];
 
 export function regionMeta(id: string): Region {

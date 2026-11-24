@@ -45,12 +45,34 @@ const SQL_EXPLANATIONS: Record<string, string> = {
   InterfaceError: "A parameter or value passed to SQLite wasn't a supported SQL type.",
 };
 
+const TS_EXPLANATIONS: Record<string, string> = {
+  ...JS_EXPLANATIONS,
+  TS2322: "Type mismatch: the value you assigned or returned doesn't match the declared TypeScript type.",
+  TS2345: "Argument type mismatch: a function received a value whose type doesn't satisfy its parameter annotation.",
+  TS2339: "Property doesn't exist on this type. Check the spelling, interface fields, or narrow a union type first.",
+  TS7006: "Implicit `any`: add an explicit type annotation to this parameter under strict TypeScript.",
+  TS2304: "Unknown identifier or type name. Check spelling and make sure the type/variable is declared before use.",
+  TS18047: "This value could be `null`. Narrow it with an `if (x !== null)` check or nullish coalescing (`??`) first.",
+  TS18048: "This value could be `undefined`. Check for `undefined` before reading properties or calling methods.",
+  TS2531: "Object is possibly `null`. Narrow the value before accessing properties on it.",
+  TS2532: "Object is possibly `undefined`. Narrow the value or use optional chaining (`?.`) first.",
+  TS2367: "TypeScript proved this comparison can never be true because the two types don't overlap.",
+  TS2741: "A required property is missing from this object literal.",
+  TS2353: "An unknown excess property was passed to an object literal matching a known interface/type.",
+  TS2540: "Cannot assign to a `readonly` property — create a new object instead of mutating it in place.",
+  TS2366: "This function lacks an ending `return` statement for at least one branch.",
+  TS2554: "Wrong number of arguments passed to a function.",
+  TS2344: "The type argument doesn't satisfy the generic `extends` constraint.",
+};
+
 export function explainError(type: string, language: Language = "python"): string {
   const table =
     language === "javascript"
       ? JS_EXPLANATIONS
-      : language === "sql"
-        ? SQL_EXPLANATIONS
-        : PYTHON_EXPLANATIONS;
+      : language === "typescript"
+        ? TS_EXPLANATIONS
+        : language === "sql"
+          ? SQL_EXPLANATIONS
+          : PYTHON_EXPLANATIONS;
   return table[type] ?? "Read the message above, then look at the line it points to.";
 }
